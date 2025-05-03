@@ -211,6 +211,18 @@ public struct MemoryFormView: View {
           }
         }
         
+        Section("Tags") {
+          Button {
+            store.send(.tagsRowTapped)
+          } label: {
+              MemoryTagsPickerView(store: Store(initialState: MemoryTagsPicker.State(tags: store.memory.tags, selectedTags: Set(store.memory.tags.ids)), reducer: {
+                MemoryTagsPicker()
+              }))
+              .tagsSection
+              .allowsHitTesting(false)
+          }
+        }
+        
         Section("Location") {
           if let location = store.memory.location {
             let coordinate = CLLocationCoordinate2D(latitude: location.lat, longitude: location.long)
@@ -241,18 +253,6 @@ public struct MemoryFormView: View {
                   .zIndex(1)
               }
             }
-          }
-        }
-        
-        Section("Tags") {
-          Button {
-            store.send(.tagsRowTapped)
-          } label: {
-              MemoryTagsPickerView(store: Store(initialState: MemoryTagsPicker.State(tags: store.memory.tags, selectedTags: Set(store.memory.tags.ids)), reducer: {
-                MemoryTagsPicker()
-              }))
-              .tagsSection
-              .allowsHitTesting(false)
           }
         }
       }
