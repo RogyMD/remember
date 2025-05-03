@@ -1,0 +1,130 @@
+// swift-tools-version: 6.0
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+    name: "RememberCore",
+    platforms: [
+      .iOS(.v18),
+    ],
+    products: [
+        .library(name: "RememberCore", targets: ["RememberCore"]),
+        // Features
+        .library(name: "CameraView", targets: ["CameraView"]),
+        .library(name: "MemoryItemPickerFeature", targets: ["MemoryItemPickerFeature"]),
+        .library(name: "MemoryFormFeature", targets: ["MemoryFormFeature"]),
+        .library(name: "MemoryTagsPickerFeature", targets: ["MemoryTagsPickerFeature"]),
+        .library(name: "MemoryListFeature", targets: ["MemoryListFeature"]),
+        .library(name: "RememberCameraFeature", targets: ["RememberCameraFeature"]),
+        .library(name: "SearchMemoryFeature", targets: ["SearchMemoryFeature"]),
+//        .library(name: "Localized", targets: ["Localized"]),
+        
+        // Clients
+        .library(name: "LocationClient", targets: ["LocationClient"]),
+        .library(name: "DatabaseClient", targets: ["DatabaseClient"]),
+    ],
+    dependencies: [
+      .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
+      .package(url: "https://github.com/RogyMD/ZoomableImage", exact: "1.0.1"),
+//      .package(url: "https://github.com/pointfreeco/swift-navigation", exact: "2.2.3"),
+//      .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.5.2"),
+//      .package(url: "https://github.com/pointfreeco/swift-issue-reporting", from: "1.5.2"),
+      //    .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", exact: "1.15.3"),
+      //        .package(url: "https://github.com/apple/swift-async-algorithms", exact: "1.0.0"),  // AsyncAlgorithms
+    ],
+    targets: [
+        .target(
+            name: "RememberCore",
+            dependencies: [
+              .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+//              "CameraTimerRecognizer",
+            ]),
+        .testTarget(
+            name: "RememberCoreTests",
+            dependencies: ["RememberCore"]
+        ),
+        .target(
+          name: "CameraView",
+          dependencies: [
+//            .product(name: "IssueReporting", package: "swift-issue-reporting"),
+          ],
+          resources: []
+        ),
+        .target(
+          name: "MemoryItemPickerFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            .product(name: "ZoomableImage", package: "ZoomableImage"),
+            "RememberCore",
+          ]
+        ),
+        .target(
+          name: "MemoryFormFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
+            "MemoryItemPickerFeature",
+            "LocationClient",
+            "MemoryTagsPickerFeature",
+          ]
+        ),
+        .target(
+          name: "MemoryTagsPickerFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
+            "DatabaseClient",
+          ]
+        ),
+        .target(
+          name: "MemoryListFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
+            "MemoryFormFeature",
+            "DatabaseClient",
+          ]
+        ),
+        .target(
+          name: "SearchMemoryFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
+            "MemoryListFeature",
+            "DatabaseClient",
+          ]
+        ),
+        .target(
+          name: "RememberCameraFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
+            "MemoryFormFeature",
+            "MemoryListFeature",
+            "CameraView",
+            "DatabaseClient",
+            "SearchMemoryFeature",
+          ]
+        ),
+        // MARK: Clients
+        .target(
+          name: "LocationClient",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+          ]
+        ),
+        .target(
+          name: "DatabaseClient",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
+          ]
+        ),
+//    .target(
+//          name: "Localized",
+//          dependencies: [],
+//          resources: [.copy("Resources/Localizable.xcstrings")]
+//        ),
+    ]
+)
