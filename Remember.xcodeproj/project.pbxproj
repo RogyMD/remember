@@ -331,7 +331,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Remember;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Remember see what to remember";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Remember to access your camera to take photos and help you track your items.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -371,7 +371,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Remember;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Remember see what to remember";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Remember to access your camera to take photos and help you track your items.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
