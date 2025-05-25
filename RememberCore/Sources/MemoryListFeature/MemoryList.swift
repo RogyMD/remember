@@ -132,20 +132,6 @@ public struct MemoryList {
   
   private func memoryFormAction(_ action: MemoryForm.Action, state: inout State) -> EffectOf<Self> {
     switch action {
-    case .binding(_):
-      return .none
-    case .memoryItemPicker(_):
-      return .none
-    case .tagsPicker(_):
-      return .none
-    case .imageRowTapped:
-      return .none
-    case .tagsRowTapped:
-      return .none
-    case .locationRowTapped:
-      return .none
-    case .receivedCurrentLocation(_):
-      return .none
     case .doneButtonTapped:
       let updatedMemory: Memory?
       if let memory = state.memoryForm?.memory,
@@ -173,6 +159,20 @@ public struct MemoryList {
         await send(.deleteRows(memory.created.startOfDay, .init(integer: index)))
         await send(.memoryForm(.dismiss))
       }
+    case .binding(_):
+      return .none
+    case .memoryItemPicker(_):
+      return .none
+    case .tagsPicker(_):
+      return .none
+    case .imageRowTapped:
+      return .none
+    case .tagsRowTapped:
+      return .none
+    case .locationRowTapped:
+      return .none
+    case .receivedCurrentLocation(_):
+      return .none
     case .forgetButtonTapped, .shareButtonTapped, .deleteButtonTapped:
       return .none
     case .onAppear:
@@ -306,6 +306,19 @@ public struct MemoryListView: View {
           }
           .font(.caption2)
           .foregroundStyle(.secondary)
+          
+          if let notes = memory.notes.nonEmpty?.prefix(150) {
+            HStack {
+              Image(systemName: "pencil.and.list.clipboard")
+              
+              Text(notes)
+                .lineLimit(1)
+            }
+            .font(.caption2)
+            .italic()
+            .bold()
+            .foregroundStyle(.tertiary)
+          }
         }
       }
     }
