@@ -6,6 +6,7 @@ import MemoryListFeature
 import MemoryFormFeature
 import DatabaseClient
 import SearchMemoryFeature
+import PhotosUI
 
 public struct CapturedImage: Equatable, Identifiable, Sendable {
   public var id: Int { image.hashValue }
@@ -28,6 +29,7 @@ public struct RememberCamera {
     var memoryForm: MemoryForm.State?
     @Presents public var searchMemory: SearchMemory.State?
     var memoryList: MemoryList.State?
+    var pickedItem: PhotosPickerItem? = nil
     
     public init(memoryForm: MemoryForm.State? = nil, memoryList: MemoryList.State? = nil) {
       self.memoryForm = memoryForm
@@ -63,6 +65,16 @@ public struct RememberCamera {
       state,
       action in
       switch action {
+      case .binding(\.pickedItem):
+        guard let item = state.pickedItem else { return .none }
+        state.pickedItem = nil
+        return .run { send in
+          if let data = try? await item.loadTransferable(type: Data.self),
+             let uiImage = UIImage(data: data) {
+            let point = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
+            await send(.capturedImage(.init(image: uiImage, point: point)))
+          }
+        }
       case .listButtonTapped:
         state.memoryList = .empty
         state.searchMemory = .init()
@@ -149,6 +161,8 @@ public struct RememberCameraView: View {
   @Bindable var store: StoreOf<RememberCamera>
   @Namespace var list
   
+  @State private var isPhotosPresented: Bool = false
+  
   public init(store: StoreOf<RememberCamera>) {
     self.store = store
   }
@@ -186,6 +200,21 @@ public struct RememberCameraView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
         .toolbar {
+          ToolbarItem(placement: .topBarLeading) {
+            Button {
+              isPhotosPresented = true
+            } label: {
+              Image(systemName: "photo.on.rectangle.angled")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .padding(10)
+                .background(.thinMaterial)
+                .clipShape(Circle())
+                .frame(width: 44, height: 44, alignment: .center)
+            }
+            .foregroundStyle(.primary)
+            .accessibilityLabel("Photos Library")
+          }
           ToolbarItem(placement: .topBarTrailing) {
             Button {
               store.send(.listButtonTapped)
@@ -199,8 +228,14 @@ public struct RememberCameraView: View {
                 .frame(width: 44, height: 44, alignment: .center)
             }
             .foregroundStyle(.primary)
+            .accessibilityLabel("Memories Library")
           }
         }
+        .photosPicker(
+          isPresented: $isPhotosPresented,
+          selection: $store.pickedItem,
+          matching: .images
+        )
       }
     }
     .sheet(store: store.scope(state: \.$searchMemory, action: \.searchMemory)) { store in
