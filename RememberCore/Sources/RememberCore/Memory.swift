@@ -5,6 +5,7 @@ public struct Memory: Sendable, Equatable, Identifiable {
   public let id: String
   public let created: Date
   public var modified: Date
+  public var  notes: String
   public var items: IdentifiedArrayOf<MemoryItem>
   public var tags: IdentifiedArrayOf<MemoryTag>
   public var location: MemoryLocation?
@@ -16,6 +17,7 @@ public struct Memory: Sendable, Equatable, Identifiable {
     id: String = UUID().uuidString,
     created: Date = Date(),
     modified: Date = Date(),
+    notes: String = "",
     items: Array<MemoryItem> = [],
     tags: Array<MemoryTag> = [],
     location: MemoryLocation? = nil
@@ -23,6 +25,7 @@ public struct Memory: Sendable, Equatable, Identifiable {
     self.id = id
     self.created = created
     self.modified = modified
+    self.notes = notes
     self.items = items.identified
     self.tags = tags.identified
     self.location = location

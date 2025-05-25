@@ -1,8 +1,8 @@
 import Foundation
 @preconcurrency import SwiftData
 
-public enum SchemaV1: VersionedSchema {
-  public static let versionIdentifier: Schema.Version = .init(1, 0, 0)
+public enum SchemaV2: VersionedSchema {
+  public static let versionIdentifier: Schema.Version = .init(2, 0, 0)
   public static var models: [any PersistentModel.Type] {
     [
       MemoryModel.self,
@@ -17,6 +17,7 @@ public enum SchemaV1: VersionedSchema {
     @Attribute(.unique) public var id: String
     public var created: Date
     public var modified: Date
+    public var notes: String = ""
     @Relationship(deleteRule: .cascade)
     public var items: [ItemModel]
     @Relationship(inverse: \TagModel.memories)
@@ -28,13 +29,15 @@ public enum SchemaV1: VersionedSchema {
       id: String,
       created: Date,
       modified: Date,
+      notes: String = "",
       items: [ItemModel],
       tags: [TagModel],
-      location: LocationModel?
+      location: LocationModel?,
     ) {
       self.id = id
       self.created = created
       self.modified = modified
+      self.notes = notes
       self.items = items
       self.tags = tags
       self.location = location

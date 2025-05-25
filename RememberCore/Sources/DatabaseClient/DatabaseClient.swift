@@ -155,6 +155,7 @@ extension Memory {
     self.init(
       id: model.id,
       created: model.created,
+      notes: model.notes,
       items: model.items.map(MemoryItem.init),
       tags: model.tags.map(MemoryTag.init),
       location: model.location.map(MemoryLocation.init)
