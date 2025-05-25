@@ -265,6 +265,7 @@ public struct MemoryFormView: View {
             .frame(minHeight: 100)
         }
       }
+      .scrollDismissesKeyboard(.interactively)
       
       IfLetStore(store.scope(state: \.memoryItemPicker, action: \.memoryItemPicker)) { store in
         NavigationStack {

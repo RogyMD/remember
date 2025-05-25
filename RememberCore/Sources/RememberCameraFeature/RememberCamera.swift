@@ -15,6 +15,14 @@ public struct CapturedImage: Equatable, Identifiable, Sendable {
   let point: CGPoint
   let location: MemoryLocation?
   let caption: String?
+  let created: Date?
+  init(image: UIImage, point: CGPoint, location: MemoryLocation? = nil, caption: String? = nil, created: Date? = nil) {
+    self.image = image
+    self.point = point
+    self.location = location
+    self.caption = caption
+    self.created = created
+  }
   
   func previewImageAndPoint() async -> (UIImage, CGPoint) {
     let cropped = await image.croppedToScreen() ?? UIImage()
@@ -58,6 +66,7 @@ public struct RememberCamera {
   
   @Dependency(\.uuid) var uuid
   @Dependency(\.database) var database
+  @Dependency(\.date.now) var now
   
   public init() {}
   
@@ -82,7 +91,8 @@ public struct RememberCamera {
                   image: uiImage,
                   point: point,
                   location: metadata.location,
-                  caption: metadata.caption
+                  caption: metadata.caption,
+                  created: metadata.created
                 )
               )
             )
@@ -116,10 +126,11 @@ public struct RememberCamera {
       case .memoryList(.closeButtonTapped):
         return .send(.searchMemory(.dismiss))
       case .capturedImage(let image):
-        return .run { [database, uuid] send in
+        return .run { [database, uuid, now] send in
           let (croppedImage, point) = await image.previewImageAndPoint()
           let memory = Memory(
             id: uuid().uuidString,
+            created: image.created ?? now,
             notes: image.caption ?? "",
             items: [
               .init(
@@ -157,7 +168,7 @@ public struct RememberCamera {
     .ifLet(\.memoryList, action: \.memoryList) {
       MemoryList()
     }
-////    ._printChanges()
+    ////    ._printChanges()
   }
   
   //  private func <#action#>Action(_ action: Action.<#Action#>, state: inout State) -> EffectOf<Self> {
@@ -187,7 +198,7 @@ public struct RememberCameraView: View {
         MemoryFormView(store: store)
       } else: {
         Group(content: {
-          #if targetEnvironment(simulator)
+#if targetEnvironment(simulator)
           VStack {
             Spacer()
             Button("Remember") {
@@ -195,11 +206,11 @@ public struct RememberCameraView: View {
             }
             Spacer()
           }
-          #else
+#else
           CameraView { image, point in
             store.send(.capturedImage(.init(image: image, point: point)))
           }
-          #endif
+#endif
         })
         .gesture(
           DragGesture(minimumDistance: 30, coordinateSpace: .local)
@@ -281,37 +292,50 @@ public struct RememberCameraView: View {
 import ImageIO
 import CoreLocation
 
-func extractMetadata(from imageData: Data) -> (location: MemoryLocation?, caption: String?) {
-    guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
-          let metadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] else {
-        return (nil, nil)
-    }
-
-    var location: CLLocation? = nil
-    var caption: String? = nil
-
-    // GPS Metadata
-    if let gps = metadata[kCGImagePropertyGPSDictionary] as? [CFString: Any],
-       let latitude = gps[kCGImagePropertyGPSLatitude] as? Double,
-       let latitudeRef = gps[kCGImagePropertyGPSLatitudeRef] as? String,
-       let longitude = gps[kCGImagePropertyGPSLongitude] as? Double,
-       let longitudeRef = gps[kCGImagePropertyGPSLongitudeRef] as? String {
-
-        let lat = latitudeRef == "S" ? -latitude : latitude
-        let lon = longitudeRef == "W" ? -longitude : longitude
-        location = MemoryLocation(lat: lat, long: lon)
-    }
-
-    // Caption/Description Metadata
-    if let tiff = metadata[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
-       let imageDescription = tiff[kCGImagePropertyTIFFImageDescription] as? String {
-        caption = imageDescription
-    } else if let exif = metadata[kCGImagePropertyExifDictionary] as? [CFString: Any],
-              let userComment = exif[kCGImagePropertyExifUserComment] as? String {
-        caption = userComment
-    }
-
-    return (location, caption)
+func extractMetadata(from imageData: Data) -> (location: MemoryLocation?, caption: String?, created: Date?) {
+  guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+        let metadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] else {
+    return (nil, nil, nil)
+  }
+  
+  var location: MemoryLocation? = nil
+  var caption: String? = nil
+  var created: Date?
+  
+  // GPS Metadata
+  if let gps = metadata[kCGImagePropertyGPSDictionary] as? [CFString: Any],
+     let latitude = gps[kCGImagePropertyGPSLatitude] as? Double,
+     let latitudeRef = gps[kCGImagePropertyGPSLatitudeRef] as? String,
+     let longitude = gps[kCGImagePropertyGPSLongitude] as? Double,
+     let longitudeRef = gps[kCGImagePropertyGPSLongitudeRef] as? String {
+    
+    let lat = latitudeRef == "S" ? -latitude : latitude
+    let lon = longitudeRef == "W" ? -longitude : longitude
+    location = MemoryLocation(lat: lat, long: lon)
+  }
+  
+  // Caption/Description Metadata
+  if let tiff = metadata[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
+     let imageDescription = tiff[kCGImagePropertyTIFFImageDescription] as? String {
+    caption = imageDescription
+  } else if let exif = metadata[kCGImagePropertyExifDictionary] as? [CFString: Any],
+            let userComment = exif[kCGImagePropertyExifUserComment] as? String {
+    caption = userComment
+  }
+  
+  let formatter = DateFormatter()
+  formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+  formatter.timeZone = TimeZone.current
+  
+  if let exif = metadata[kCGImagePropertyExifDictionary] as? [CFString: Any],
+     let dateString = exif[kCGImagePropertyExifDateTimeOriginal] as? String {
+    created = formatter.date(from: dateString)
+  } else if let tiff = metadata[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
+            let dateString = tiff[kCGImagePropertyTIFFDateTime] as? String {
+    created = formatter.date(from: dateString)
+  }
+  
+  return (location, caption, created)
 }
 
 #if DEBUG
