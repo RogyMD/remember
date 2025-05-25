@@ -26,7 +26,8 @@ extension FetchDescriptor where T == MemoryModel {
         }) ||
         memory.items.contains(where: { item in
           item.name.localizedStandardContains(query)
-        })
+        }) ||
+        memory.notes.localizedStandardContains(query)
       },
       sortBy: [
         SortDescriptor(\.created, order: .reverse),

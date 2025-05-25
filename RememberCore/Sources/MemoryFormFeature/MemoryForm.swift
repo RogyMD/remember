@@ -263,8 +263,6 @@ public struct MemoryFormView: View {
           TextEditor(text: $store.memory.notes)
             .padding(.vertical)
             .frame(minHeight: 100)
-          //              .background(Color(.secondarySystemBackground))
-          //              .cornerRadius(8)
         }
       }
       
