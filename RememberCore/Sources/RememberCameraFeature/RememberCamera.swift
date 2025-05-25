@@ -6,12 +6,15 @@ import MemoryListFeature
 import MemoryFormFeature
 import DatabaseClient
 import SearchMemoryFeature
+import LocationClient
 import PhotosUI
 
 public struct CapturedImage: Equatable, Identifiable, Sendable {
   public var id: Int { image.hashValue }
   let image: UIImage
   let point: CGPoint
+  let location: MemoryLocation?
+  let caption: String?
   
   func previewImageAndPoint() async -> (UIImage, CGPoint) {
     let cropped = await image.croppedToScreen() ?? UIImage()
@@ -72,7 +75,17 @@ public struct RememberCamera {
           if let data = try? await item.loadTransferable(type: Data.self),
              let uiImage = UIImage(data: data) {
             let point = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
-            await send(.capturedImage(.init(image: uiImage, point: point)))
+            let metadata = extractMetadata(from: data)
+            await send(
+              .capturedImage(
+                .init(
+                  image: uiImage,
+                  point: point,
+                  location: metadata.location,
+                  caption: metadata.caption
+                )
+              )
+            )
           }
         }
       case .listButtonTapped:
@@ -107,6 +120,7 @@ public struct RememberCamera {
           let (croppedImage, point) = await image.previewImageAndPoint()
           let memory = Memory(
             id: uuid().uuidString,
+            notes: image.caption ?? "",
             items: [
               .init(
                 id: uuid().uuidString,
@@ -115,7 +129,7 @@ public struct RememberCamera {
               )
             ],
             tags: [],
-            location: nil
+            location: image.location
           )
           await send(.createMemory(memory, croppedImage))
           try await database.saveMemory(memory, image.image, croppedImage)
@@ -263,6 +277,42 @@ public struct RememberCameraView: View {
 //    in
 //  }
 //}
+
+import ImageIO
+import CoreLocation
+
+func extractMetadata(from imageData: Data) -> (location: MemoryLocation?, caption: String?) {
+    guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+          let metadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] else {
+        return (nil, nil)
+    }
+
+    var location: CLLocation? = nil
+    var caption: String? = nil
+
+    // GPS Metadata
+    if let gps = metadata[kCGImagePropertyGPSDictionary] as? [CFString: Any],
+       let latitude = gps[kCGImagePropertyGPSLatitude] as? Double,
+       let latitudeRef = gps[kCGImagePropertyGPSLatitudeRef] as? String,
+       let longitude = gps[kCGImagePropertyGPSLongitude] as? Double,
+       let longitudeRef = gps[kCGImagePropertyGPSLongitudeRef] as? String {
+
+        let lat = latitudeRef == "S" ? -latitude : latitude
+        let lon = longitudeRef == "W" ? -longitude : longitude
+        location = MemoryLocation(lat: lat, long: lon)
+    }
+
+    // Caption/Description Metadata
+    if let tiff = metadata[kCGImagePropertyTIFFDictionary] as? [CFString: Any],
+       let imageDescription = tiff[kCGImagePropertyTIFFImageDescription] as? String {
+        caption = imageDescription
+    } else if let exif = metadata[kCGImagePropertyExifDictionary] as? [CFString: Any],
+              let userComment = exif[kCGImagePropertyExifUserComment] as? String {
+        caption = userComment
+    }
+
+    return (location, caption)
+}
 
 #if DEBUG
 
