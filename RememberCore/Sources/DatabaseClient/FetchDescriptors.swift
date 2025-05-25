@@ -8,7 +8,7 @@ extension FetchDescriptor where T == MemoryModel {
   ) -> Self {
     var descriptor = FetchDescriptor(predicate: predicate, sortBy: sortBy)
     descriptor.relationshipKeyPathsForPrefetching = [\.items, \.tags, \.location]
-    descriptor.propertiesToFetch = [\.id, \.created, \.modified]
+    descriptor.propertiesToFetch = [\.id, \.created, \.modified, \.notes]
     return descriptor
   }
   
