@@ -141,7 +141,7 @@ public struct SearchMemoryView<Content>: View where Content: View {
     .searchable(
       text: $store.query,
       isPresented: $store.isSearchPresented,
-      prompt: "Search items, tags & notes"
+      prompt: "Search items, tags or notes"
     )
   }
 }
