@@ -12,7 +12,7 @@ public struct SearchMemory {
     public var isSearchPresented = false
     var query: String = ""
     var isLoading = false
-//    @Presents var <#attribute#>: <#State#>?
+
     public init(
       resultsList: MemoryList.State? = nil,
       isSearchPresented: Bool = false,
@@ -24,10 +24,6 @@ public struct SearchMemory {
       self.query = query
       self.isLoading = isLoading
     }
-    
-//    public init() {
-//      self.init
-//    }
   }
   
   @CasePathable
@@ -145,7 +141,7 @@ public struct SearchMemoryView<Content>: View where Content: View {
     .searchable(
       text: $store.query,
       isPresented: $store.isSearchPresented,
-      prompt: "Search items and tags"
+      prompt: "Search items, tags or notes"
     )
   }
 }

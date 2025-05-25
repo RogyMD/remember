@@ -8,7 +8,7 @@ extension FetchDescriptor where T == MemoryModel {
   ) -> Self {
     var descriptor = FetchDescriptor(predicate: predicate, sortBy: sortBy)
     descriptor.relationshipKeyPathsForPrefetching = [\.items, \.tags, \.location]
-    descriptor.propertiesToFetch = [\.id, \.created, \.modified]
+    descriptor.propertiesToFetch = [\.id, \.created, \.modified, \.notes]
     return descriptor
   }
   
@@ -26,7 +26,8 @@ extension FetchDescriptor where T == MemoryModel {
         }) ||
         memory.items.contains(where: { item in
           item.name.localizedStandardContains(query)
-        })
+        }) ||
+        memory.notes.localizedStandardContains(query)
       },
       sortBy: [
         SortDescriptor(\.created, order: .reverse),

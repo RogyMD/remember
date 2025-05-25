@@ -57,6 +57,7 @@ public struct MemoryForm: Sendable {
   public init() {}
   
   @Dependency(\.locationClient) var locationClient
+  @Dependency(\.date.now) var now
   
   public var body: some ReducerOf<Self> {
     BindingReducer()
@@ -95,7 +96,10 @@ public struct MemoryForm: Sendable {
         }
       case .receivedCurrentLocation(let coordinates):
         state.memory.location = .init(lat: coordinates.lat, long: coordinates.long)
-        state.memory.modified = Date()
+        state.memory.modified = now
+        return .none
+      case .binding(\.memory):
+        state.memory.modified = now
         return .none
       case .tagsPicker(.presented(let action)):
         return tagsPickerAction(action, state: &state)
@@ -125,9 +129,9 @@ public struct MemoryForm: Sendable {
       return .send(.tagsPicker(.dismiss))
     case .binding:
       return .none
-    case .tagTapped(let iD):
+    case .tagTapped:
       return .none
-    case .addTagAndSelect(let string):
+    case .addTagAndSelect:
       return .none
     case .primaryButtonTapped, .loadTagsIfNeeded:
       return .none
@@ -139,7 +143,7 @@ public struct MemoryForm: Sendable {
       let newItems = (state.memoryItemPicker?.items.filter({ $0.name.trimmingCharacters(in: .whitespaces).isEmpty == false }) ?? []).identified
       if newItems != state.memory.items {
         state.memory.items = newItems
-        state.memory.modified = Date()
+        state.memory.modified = now
       }
       state.memoryItemPicker = nil
       return .none
@@ -255,7 +259,13 @@ public struct MemoryFormView: View {
             }
           }
         }
+        Section(header: Text("Notes")) {
+          TextEditor(text: $store.memory.notes)
+            .padding(.vertical)
+            .frame(minHeight: 100)
+        }
       }
+      .scrollDismissesKeyboard(.interactively)
       
       IfLetStore(store.scope(state: \.memoryItemPicker, action: \.memoryItemPicker)) { store in
         NavigationStack {

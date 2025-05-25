@@ -88,6 +88,7 @@ extension MemoryModel {
       id: memory.id,
       created: memory.created,
       modified: memory.modified,
+      notes: memory.notes,
       items: memory.items.map(ItemModel.init),
       tags: memory.tags.map(TagModel.init),
       location: memory.location.map(LocationModel.init)
@@ -97,6 +98,7 @@ extension MemoryModel {
   func update(_ memory: Memory) {
     guard id == memory.id, modified != memory.modified else { return }
     modified = memory.modified
+    notes = memory.notes
     let newItems = memory.items.map(ItemModel.init)
     let newTags = memory.tags.map(TagModel.init)
     let newLocation = memory.location.map(LocationModel.init)
@@ -130,7 +132,7 @@ extension ItemModel {
   }
   
   func update(_ item: MemoryItem) {
-    let itemCenter = ItemModel.Point(item.center)
+    let itemCenter = LabelPoint(item.center)
     guard id == item.id && (name != item.name || center != itemCenter) else { return }
     modified = Date()
     name = item.name
