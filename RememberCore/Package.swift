@@ -18,12 +18,15 @@ let package = Package(
         .library(name: "MemoryListFeature", targets: ["MemoryListFeature"]),
         .library(name: "RememberCameraFeature", targets: ["RememberCameraFeature"]),
         .library(name: "SearchMemoryFeature", targets: ["SearchMemoryFeature"]),
+        .library(name: "HomeFeature", targets: ["HomeFeature"]),
 //        .library(name: "Localized", targets: ["Localized"]),
         
         // Clients
         .library(name: "LocationClient", targets: ["LocationClient"]),
         .library(name: "DatabaseClient", targets: ["DatabaseClient"]),
         .library(name: "MapsAppURLClient", targets: ["MapsAppURLClient"]),
+        .library(name: "RequestStoreReview", targets: ["RequestStoreReview"]),
+        .library(name: "SharingKeys", targets: ["SharingKeys"]),
     ],
     dependencies: [
       .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
@@ -102,11 +105,20 @@ let package = Package(
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             "RememberCore",
+            "CameraView",
+          ]
+        ),
+        .target(
+          name: "HomeFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
             "MemoryFormFeature",
             "MemoryListFeature",
-            "CameraView",
             "DatabaseClient",
             "SearchMemoryFeature",
+            "RequestStoreReview",
+            "SharingKeys",
           ]
         ),
         // MARK: Clients
@@ -118,6 +130,18 @@ let package = Package(
         ),
         .target(
           name: "MapsAppURLClient",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+          ]
+        ),
+        .target(
+          name: "RequestStoreReview",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+          ]
+        ),
+        .target(
+          name: "SharingKeys",
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
           ]

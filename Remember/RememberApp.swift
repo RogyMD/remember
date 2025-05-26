@@ -1,18 +1,18 @@
 import SwiftUI
-import RememberCameraFeature
+import HomeFeature
 import ComposableArchitecture
 
 @main
 struct RememberApp: App {
-  @Bindable var store: StoreOf<RememberCamera> = Store(
-    initialState: RememberCamera.State()
+  @Bindable var store: StoreOf<Home> = Store(
+    initialState: Home.State()
   ) {
-    RememberCamera()
+    Home()
   }
   
   var body: some Scene {
     WindowGroup {
-      RememberCameraView(store: store)
+      HomeView(store: store)
     }
   }
 }
