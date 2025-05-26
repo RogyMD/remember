@@ -7,6 +7,7 @@ import MapKit
 import LocationClient
 import IssueReporting
 import MemoryTagsPickerFeature
+import MapsAppURLClient
 
 @Reducer
 public struct MemoryForm: Sendable {
@@ -51,12 +52,14 @@ public struct MemoryForm: Sendable {
     case shareButtonTapped
     case deleteButtonTapped
     case deleteConfirmationAlertButtonTapped
+    case openInMapsButtonTapped
     case onAppear
   }
   
   public init() {}
   
   @Dependency(\.locationClient) var locationClient
+  @Dependency(\.mapsApp) var mapsApp
   @Dependency(\.date.now) var now
   
   public var body: some ReducerOf<Self> {
@@ -65,6 +68,14 @@ public struct MemoryForm: Sendable {
       state,
       action in
       switch action {
+      case .openInMapsButtonTapped:
+        guard let memoryLocation = state.memory.location else {
+          return .none
+        }
+        let location = MapsLocation(lat: memoryLocation.lat, long: memoryLocation.long, name: state.memory.name)
+        return .run { [mapsApp] send in
+          await mapsApp.openLocationInMaps(location)
+        }
       case .shareButtonTapped:
         return .none
       case .deleteButtonTapped:
@@ -239,8 +250,18 @@ public struct MemoryFormView: View {
               MapUserLocationButton()
             })
             .mapControlVisibility(.visible)
-            .frame(height: 200)
+            .frame(height: 150)
             .cornerRadius(.cornerRadius)
+            
+            
+            Button {
+              store.send(.openInMapsButtonTapped)
+            } label: {
+              HStack {
+                Image(systemName: "mappin.and.ellipse")
+                Text("Open in Maps")
+              }
+            }
           } else {
             ZStack {
               LocationButton(.currentLocation) {

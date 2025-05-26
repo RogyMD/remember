@@ -23,6 +23,7 @@ let package = Package(
         // Clients
         .library(name: "LocationClient", targets: ["LocationClient"]),
         .library(name: "DatabaseClient", targets: ["DatabaseClient"]),
+        .library(name: "MapsAppURLClient", targets: ["MapsAppURLClient"]),
     ],
     dependencies: [
       .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
@@ -67,6 +68,7 @@ let package = Package(
             "MemoryItemPickerFeature",
             "LocationClient",
             "MemoryTagsPickerFeature",
+            "MapsAppURLClient",
           ]
         ),
         .target(
@@ -110,6 +112,12 @@ let package = Package(
         // MARK: Clients
         .target(
           name: "LocationClient",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+          ]
+        ),
+        .target(
+          name: "MapsAppURLClient",
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
           ]
