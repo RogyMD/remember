@@ -53,6 +53,7 @@ public struct MemoryForm: Sendable {
     case deleteButtonTapped
     case deleteConfirmationAlertButtonTapped
     case openInMapsButtonTapped
+    case removeLocationButtonTapped
     case onAppear
   }
   
@@ -68,6 +69,8 @@ public struct MemoryForm: Sendable {
       state,
       action in
       switch action {
+      case .removeLocationButtonTapped:
+        return .send(.binding(.set(\.memory.location, nil)))
       case .openInMapsButtonTapped:
         guard let memoryLocation = state.memory.location else {
           return .none
@@ -239,6 +242,16 @@ public struct MemoryFormView: View {
         }
         
         Section("Location") {
+          currentLocationButton
+          
+          if store.memory.location != nil {
+            Button(role: .destructive) {
+              store.send(.removeLocationButtonTapped)
+            } label: {
+              Text("Remove Location")
+            }
+          }
+          
           if let location = store.memory.location {
             let coordinate = CLLocationCoordinate2D(latitude: location.lat, longitude: location.long)
             Map {
@@ -260,22 +273,6 @@ public struct MemoryFormView: View {
               HStack {
                 Image(systemName: "mappin.and.ellipse")
                 Text("Open in Maps")
-              }
-            }
-          } else {
-            ZStack {
-              LocationButton(.currentLocation) {
-                store.send(.locationRowTapped)
-              }
-              .symbolVariant(.fill)
-              .labelStyle(.titleAndIcon)
-              .foregroundStyle(.primary)
-              .cornerRadius(.cornerRadius)
-              .font(Font.item)
-              
-              if store.locationInProgress {
-                ProgressView()
-                  .zIndex(1)
               }
             }
           }
@@ -314,6 +311,29 @@ public struct MemoryFormView: View {
     .alert("Delete memory?", isPresented: $store.isDeleteConfirmationAlertShown) {
       Button("Delete", role: .destructive) {
         store.send(.deleteConfirmationAlertButtonTapped)
+      }
+    }
+  }
+  
+  var currentLocationButton: some View {
+    ZStack {
+      HStack {
+        LocationButton(.currentLocation) {
+          store.send(.locationRowTapped)
+        }
+        .symbolVariant(.fill)
+        .labelStyle(.iconOnly)
+        .foregroundStyle(.primary)
+        .cornerRadius(.cornerRadius)
+        .font(Font.item)
+        
+        Text("Use Current Location")
+          .foregroundStyle(.tint)
+      }
+      
+      if store.locationInProgress {
+        ProgressView()
+          .zIndex(1)
       }
     }
   }
