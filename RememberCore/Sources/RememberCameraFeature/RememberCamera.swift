@@ -36,6 +36,7 @@ public struct RememberCamera {
     //  public enum Action: Equatable {
     case binding(BindingAction<State>)
     case capturedImage(CapturedImage)
+    case importImage(Data)
   }
   
   @Dependency(\.date.now) var now
@@ -49,25 +50,29 @@ public struct RememberCamera {
       state,
       action in
       switch action {
+      case .importImage(let data):
+        return .run { [now] send in
+          guard let uiImage = UIImage(data: data) else { return }
+          let point = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
+          let metadata = extractMetadata(from: data)
+          await send(
+            .capturedImage(
+              .init(
+                image: uiImage,
+                point: point,
+                created: metadata.created ?? now,
+                location: metadata.location,
+                caption: metadata.caption
+              )
+            )
+          )
+        }
       case .binding(\.pickedItem):
         guard let item = state.pickedItem else { return .none }
         state.pickedItem = nil
-        return .run { [now] send in
-          if let data = try? await item.loadTransferable(type: Data.self),
-             let uiImage = UIImage(data: data) {
-            let point = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
-            let metadata = extractMetadata(from: data)
-            await send(
-              .capturedImage(
-                .init(
-                  image: uiImage,
-                  point: point,
-                  created: metadata.created ?? now,
-                  location: metadata.location,
-                  caption: metadata.caption
-                )
-              )
-            )
+        return .run { send in
+          if let data = try await item.loadTransferable(type: Data.self) {
+            await send(.importImage(data))
           }
         }
       case .binding, .capturedImage:

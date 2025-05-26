@@ -35,6 +35,7 @@ public struct Home {
     case listButtonTapped
     case swipeDown
     case requestStoreReview
+    case onOpenURL(URL)
   }
   
   @Dependency(\.uuid) var uuid
@@ -51,6 +52,19 @@ public struct Home {
     
     Reduce { state, action in
       switch action {
+      case .onOpenURL(let url):
+        return .run { send in
+          defer { url.stopAccessingSecurityScopedResource() }
+          guard url.startAccessingSecurityScopedResource() else {
+            return reportIssue("Can't access file on url: \(url)")
+          }
+          do {
+            let data = try Data(contentsOf: url)
+            await send(.camera(.importImage(data)))
+          } catch {
+            reportIssue(error)
+          }
+        }
       case .requestStoreReview:
         return .run { _ in
           try? await requestReviewAsync()
@@ -221,6 +235,9 @@ public struct HomeView: View {
             }
           }
       }
+    }
+    .onOpenURL { url in
+      store.send(.onOpenURL(url))
     }
     .sheet(store: store.scope(state: \.$searchMemory, action: \.searchMemory)) { store in
       NavigationStack {
