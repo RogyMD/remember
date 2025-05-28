@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C4405BE12DE4216300D0AE36 /* HomeFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C4405BE02DE4216300D0AE36 /* HomeFeature */; };
 		C469CDB82D94E06100DC583D /* MemoryTagsPickerFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C469CDB72D94E06100DC583D /* MemoryTagsPickerFeature */; };
 		C46EF3EE2D8E6F0300C23CA1 /* MemoryItemPickerFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C46EF3ED2D8E6F0300C23CA1 /* MemoryItemPickerFeature */; };
 		C4BE26DA2D98BE4200FED647 /* MemoryListFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C4BE26D92D98BE4200FED647 /* MemoryListFeature */; };
@@ -76,6 +77,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C4BE26DA2D98BE4200FED647 /* MemoryListFeature in Frameworks */,
+				C4405BE12DE4216300D0AE36 /* HomeFeature in Frameworks */,
 				C4BE26E02DA166F500FED647 /* RememberCameraFeature in Frameworks */,
 				C469CDB82D94E06100DC583D /* MemoryTagsPickerFeature in Frameworks */,
 				C4BE26DC2D9B545300FED647 /* CameraView in Frameworks */,
@@ -156,6 +158,7 @@
 				C4BE26D92D98BE4200FED647 /* MemoryListFeature */,
 				C4BE26DB2D9B545300FED647 /* CameraView */,
 				C4BE26DF2DA166F500FED647 /* RememberCameraFeature */,
+				C4405BE02DE4216300D0AE36 /* HomeFeature */,
 			);
 			productName = Remember;
 			productReference = C4F71BF32D84F11400F4CFC2 /* Remember.app */;
@@ -630,6 +633,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C4405BE02DE4216300D0AE36 /* HomeFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HomeFeature;
+		};
 		C469CDB72D94E06100DC583D /* MemoryTagsPickerFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MemoryTagsPickerFeature;
