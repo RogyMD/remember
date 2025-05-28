@@ -7,6 +7,7 @@ import MapKit
 import LocationClient
 import IssueReporting
 import MemoryTagsPickerFeature
+import MapsAppURLClient
 
 @Reducer
 public struct MemoryForm: Sendable {
@@ -51,12 +52,15 @@ public struct MemoryForm: Sendable {
     case shareButtonTapped
     case deleteButtonTapped
     case deleteConfirmationAlertButtonTapped
+    case openInMapsButtonTapped
+    case removeLocationButtonTapped
     case onAppear
   }
   
   public init() {}
   
   @Dependency(\.locationClient) var locationClient
+  @Dependency(\.mapsApp) var mapsApp
   @Dependency(\.date.now) var now
   
   public var body: some ReducerOf<Self> {
@@ -65,6 +69,16 @@ public struct MemoryForm: Sendable {
       state,
       action in
       switch action {
+      case .removeLocationButtonTapped:
+        return .send(.binding(.set(\.memory.location, nil)))
+      case .openInMapsButtonTapped:
+        guard let memoryLocation = state.memory.location else {
+          return .none
+        }
+        let location = MapsLocation(lat: memoryLocation.lat, long: memoryLocation.long, name: state.memory.name)
+        return .run { [mapsApp] send in
+          await mapsApp.openLocationInMaps(location)
+        }
       case .shareButtonTapped:
         return .none
       case .deleteButtonTapped:
@@ -228,6 +242,16 @@ public struct MemoryFormView: View {
         }
         
         Section("Location") {
+          currentLocationButton
+          
+          if store.memory.location != nil {
+            Button(role: .destructive) {
+              store.send(.removeLocationButtonTapped)
+            } label: {
+              Text("Remove Location")
+            }
+          }
+          
           if let location = store.memory.location {
             let coordinate = CLLocationCoordinate2D(latitude: location.lat, longitude: location.long)
             Map {
@@ -239,22 +263,16 @@ public struct MemoryFormView: View {
               MapUserLocationButton()
             })
             .mapControlVisibility(.visible)
-            .frame(height: 200)
+            .frame(height: 150)
             .cornerRadius(.cornerRadius)
-          } else {
-            ZStack {
-              LocationButton(.currentLocation) {
-                store.send(.locationRowTapped)
-              }
-              .symbolVariant(.fill)
-              .labelStyle(.titleAndIcon)
-              .foregroundStyle(.primary)
-              .cornerRadius(.cornerRadius)
-              .font(Font.item)
-              
-              if store.locationInProgress {
-                ProgressView()
-                  .zIndex(1)
+            
+            
+            Button {
+              store.send(.openInMapsButtonTapped)
+            } label: {
+              HStack {
+                Image(systemName: "mappin.and.ellipse")
+                Text("Open in Maps")
               }
             }
           }
@@ -293,6 +311,29 @@ public struct MemoryFormView: View {
     .alert("Delete memory?", isPresented: $store.isDeleteConfirmationAlertShown) {
       Button("Delete", role: .destructive) {
         store.send(.deleteConfirmationAlertButtonTapped)
+      }
+    }
+  }
+  
+  var currentLocationButton: some View {
+    ZStack {
+      HStack {
+        LocationButton(.currentLocation) {
+          store.send(.locationRowTapped)
+        }
+        .symbolVariant(.fill)
+        .labelStyle(.iconOnly)
+        .foregroundStyle(.primary)
+        .cornerRadius(.cornerRadius)
+        .font(Font.item)
+        
+        Text("Use Current Location")
+          .foregroundStyle(.tint)
+      }
+      
+      if store.locationInProgress {
+        ProgressView()
+          .zIndex(1)
       }
     }
   }

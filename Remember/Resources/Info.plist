@@ -4,5 +4,63 @@
 <dict>
 	<key>NSLocationDefaultAccuracyReduced</key>
 	<false/>
+  <key>UTImportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>public.jpeg</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.image</string>
+      </array>
+      <key>UTTypeDescription</key>
+      <string>JPEG image</string>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>jpeg</string>
+          <string>jpg</string>
+        </array>
+        <key>public.mime-type</key>
+        <string>image/jpeg</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>public.png</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.image</string>
+      </array>
+      <key>UTTypeDescription</key>
+      <string>PNG image</string>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>png</string>
+        </array>
+        <key>public.mime-type</key>
+        <string>image/png</string>
+      </dict>
+    </dict>
+  </array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Image</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.image</string>
+				<string>public.jpeg</string>
+				<string>public.jpg</string>
+				<string>public.png</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+		</dict>
+	</array>
 </dict>
 </plist>

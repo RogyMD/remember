@@ -173,7 +173,7 @@ public struct MemoryList {
       return .none
     case .receivedCurrentLocation(_):
       return .none
-    case .forgetButtonTapped, .shareButtonTapped, .deleteButtonTapped:
+    case .forgetButtonTapped, .shareButtonTapped, .deleteButtonTapped, .openInMapsButtonTapped, .removeLocationButtonTapped:
       return .none
     case .onAppear:
       return .none

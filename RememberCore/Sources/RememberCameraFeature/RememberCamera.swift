@@ -2,34 +2,22 @@ import ComposableArchitecture
 import RememberCore
 import SwiftUI
 import CameraView
-import MemoryListFeature
-import MemoryFormFeature
-import DatabaseClient
-import SearchMemoryFeature
-import LocationClient
 import PhotosUI
 
 public struct CapturedImage: Equatable, Identifiable, Sendable {
   public var id: Int { image.hashValue }
-  let image: UIImage
-  let point: CGPoint
-  let location: MemoryLocation?
-  let caption: String?
-  let created: Date?
-  init(image: UIImage, point: CGPoint, location: MemoryLocation? = nil, caption: String? = nil, created: Date? = nil) {
+  public let image: UIImage
+  public let point: CGPoint
+  public let created: Date
+  public let location: MemoryLocation?
+  public let caption: String?
+  
+  init(image: UIImage, point: CGPoint, created: Date = Date(), location: MemoryLocation? = nil, caption: String? = nil) {
     self.image = image
     self.point = point
     self.location = location
     self.caption = caption
     self.created = created
-  }
-  
-  func previewImageAndPoint() async -> (UIImage, CGPoint) {
-    let cropped = await image.croppedToScreen() ?? UIImage()
-    let screenSize = await MainActor.run {
-      UIScreen.main.bounds.size
-    }
-    return (cropped, point.convertPoint(from: image.size, to: .init(origin: .zero, size: screenSize)))
   }
 }
 
@@ -37,18 +25,10 @@ public struct CapturedImage: Equatable, Identifiable, Sendable {
 public struct RememberCamera {
   @ObservableState
   public struct State: Equatable {
-    var memoryForm: MemoryForm.State?
-    @Presents public var searchMemory: SearchMemory.State?
-    var memoryList: MemoryList.State?
     var pickedItem: PhotosPickerItem? = nil
     
-    public init(memoryForm: MemoryForm.State? = nil, memoryList: MemoryList.State? = nil) {
-      self.memoryForm = memoryForm
-      self.memoryList = memoryList
+    public init() {
     }
-    //        public init() {
-    //            self.ini
-    //        }
   }
   
   @CasePathable
@@ -56,16 +36,9 @@ public struct RememberCamera {
     //  public enum Action: Equatable {
     case binding(BindingAction<State>)
     case capturedImage(CapturedImage)
-    case memoryForm(MemoryForm.Action)
-    case createMemory(Memory, UIImage)
-    case memoryList(MemoryList.Action)
-    case searchMemory(PresentationAction<SearchMemory.Action>)
-    case listButtonTapped
-    case swipeDown
+    case importImage(Data)
   }
   
-  @Dependency(\.uuid) var uuid
-  @Dependency(\.database) var database
   @Dependency(\.date.now) var now
   
   public init() {}
@@ -77,106 +50,37 @@ public struct RememberCamera {
       state,
       action in
       switch action {
+      case .importImage(let data):
+        return .run { [now] send in
+          guard let uiImage = UIImage(data: data) else { return }
+          let point = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
+          let metadata = extractMetadata(from: data)
+          await send(
+            .capturedImage(
+              .init(
+                image: uiImage,
+                point: point,
+                created: metadata.created ?? now,
+                location: metadata.location,
+                caption: metadata.caption
+              )
+            )
+          )
+        }
       case .binding(\.pickedItem):
         guard let item = state.pickedItem else { return .none }
         state.pickedItem = nil
         return .run { send in
-          if let data = try? await item.loadTransferable(type: Data.self),
-             let uiImage = UIImage(data: data) {
-            let point = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
-            let metadata = extractMetadata(from: data)
-            await send(
-              .capturedImage(
-                .init(
-                  image: uiImage,
-                  point: point,
-                  location: metadata.location,
-                  caption: metadata.caption,
-                  created: metadata.created
-                )
-              )
-            )
+          if let data = try await item.loadTransferable(type: Data.self) {
+            await send(.importImage(data))
           }
         }
-      case .listButtonTapped:
-        state.memoryList = .empty
-        state.searchMemory = .init()
-        return .none
-      case .swipeDown:
-        state.memoryList = .empty
-        state.searchMemory = .init(isSearchPresented: true)
-        return .none
-      case .memoryForm(.doneButtonTapped):
-        let memory = state.memoryForm?.memory
-        state.memoryForm = nil
-        return .run { [database] send in
-          guard let memory else { return }
-          try await database.updateOrInsertMemory(memory)
-        }
-      case .memoryForm(.cancelButtonTapped):
-        state.memoryForm = nil
-        return .none
-      case .memoryForm(.forgetButtonTapped):
-        let memoryId = state.memoryForm?.memory.id
-        state.memoryForm = nil
-        return .run { [database] _ in
-          guard let memoryId else { return }
-          try await database.deleteMemory(memoryId)
-        }
-      case .memoryList(.closeButtonTapped):
-        return .send(.searchMemory(.dismiss))
-      case .capturedImage(let image):
-        return .run { [database, uuid, now] send in
-          let (croppedImage, point) = await image.previewImageAndPoint()
-          let memory = Memory(
-            id: uuid().uuidString,
-            created: image.created ?? now,
-            notes: image.caption ?? "",
-            items: [
-              .init(
-                id: uuid().uuidString,
-                name: "",
-                center: point
-              )
-            ],
-            tags: [],
-            location: image.location
-          )
-          await send(.createMemory(memory, croppedImage))
-          try await database.saveMemory(memory, image.image, croppedImage)
-        }
-      case .createMemory(let memory, let previewImage):
-        state.memoryForm = .init(
-          memory: memory,
-          isNew: true,
-          previewImage: .init(uiImage: previewImage)
-        )
-        return .none
-      case .memoryForm,
-          .memoryList,
-          .searchMemory,
-          .binding:
+      case .binding, .capturedImage:
         return .none
       }
     }
-    .ifLet(\.memoryForm, action: \.memoryForm) {
-      MemoryForm()
-    }
-    .ifLet(\.$searchMemory, action: \.searchMemory) {
-      SearchMemory()
-    }
-    .ifLet(\.memoryList, action: \.memoryList) {
-      MemoryList()
-    }
     ////    ._printChanges()
   }
-  
-  //  private func <#action#>Action(_ action: Action.<#Action#>, state: inout State) -> EffectOf<Self> {
-  //    switch action {
-  //    case .<#action#>:
-  //      return .none
-  //    }
-  //  }
 }
 
 
@@ -193,88 +97,45 @@ public struct RememberCameraView: View {
   }
   
   public var body: some View {
-    NavigationStack {
-      IfLetStore(store.scope(state: \.memoryForm, action: \.memoryForm)) { store in
-        MemoryFormView(store: store)
-      } else: {
-        Group(content: {
+    Group(content: {
 #if targetEnvironment(simulator)
-          VStack {
-            Spacer()
-            Button("Remember") {
-              store.send(.capturedImage(.init(image: UIImage(systemName: "star")!, point: .zero)))
-            }
-            Spacer()
-          }
+      VStack {
+        Spacer()
+        Button("Remember") {
+          store.send(.capturedImage(.init(image: UIImage(systemName: "star")!, point: .zero)))
+        }
+        Spacer()
+      }
 #else
-          CameraView { image, point in
-            store.send(.capturedImage(.init(image: image, point: point)))
-          }
+      CameraView { image, point in
+        store.send(.capturedImage(.init(image: image, point: point)))
+      }
 #endif
-        })
-        .gesture(
-          DragGesture(minimumDistance: 30, coordinateSpace: .local)
-            .onEnded { value in
-              if value.velocity.height < -500 {
-                store.send(.listButtonTapped)
-              } else if value.velocity.height > 500 {
-                store.send(.swipeDown)
-              }
-            }
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
-        .toolbar {
-          ToolbarItem(placement: .topBarLeading) {
-            Button {
-              isPhotosPresented = true
-            } label: {
-              Image(systemName: "photo.on.rectangle.angled")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .padding(10)
-                .background(.thinMaterial)
-                .clipShape(Circle())
-                .frame(width: 44, height: 44, alignment: .center)
-            }
-            .foregroundStyle(.primary)
-            .accessibilityLabel("Photos Library")
-          }
-          ToolbarItem(placement: .topBarTrailing) {
-            Button {
-              store.send(.listButtonTapped)
-            } label: {
-              Image(systemName: "photo.stack")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .padding(10)
-                .background(.thinMaterial)
-                .clipShape(Circle())
-                .frame(width: 44, height: 44, alignment: .center)
-            }
-            .foregroundStyle(.primary)
-            .accessibilityLabel("Memories Library")
-          }
+    })
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .ignoresSafeArea()
+    .toolbar {
+      ToolbarItem(placement: .topBarLeading) {
+        Button {
+          isPhotosPresented = true
+        } label: {
+          Image(systemName: "photo.on.rectangle.angled")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .padding(10)
+            .background(.thinMaterial)
+            .clipShape(Circle())
+            .frame(width: 44, height: 44, alignment: .center)
         }
-        .photosPicker(
-          isPresented: $isPhotosPresented,
-          selection: $store.pickedItem,
-          matching: .images
-        )
+        .foregroundStyle(.primary)
+        .accessibilityLabel("Photos Library")
       }
     }
-    .sheet(store: store.scope(state: \.$searchMemory, action: \.searchMemory)) { store in
-      NavigationStack {
-        SearchMemoryView(store: store) {
-          IfLetStore(self.store.scope(state: \.memoryList, action: \.memoryList)) { store in
-            MemoryListView(store: store)
-          } else: {
-            EmptyView()
-          }
-        }
-        .presentationBackground(.thinMaterial)
-      }
-    }
+    .photosPicker(
+      isPresented: $isPhotosPresented,
+      selection: $store.pickedItem,
+      matching: .images
+    )
   }
 }
 
