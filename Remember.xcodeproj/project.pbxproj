@@ -34,6 +34,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C40975322DEAB624003A08EB /* Draft.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = Draft.playground; path = /Users/rogy/Library/CloudStorage/Dropbox/RogyWorkspace/Projects/Remember/repo/remember/Draft.playground; sourceTree = "<absolute>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		C44E34172D870D45008EC3BF /* RememberCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RememberCore; sourceTree = "<group>"; };
 		C4F71BF32D84F11400F4CFC2 /* Remember.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Remember.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4F71C072D84F11600F4CFC2 /* RememberTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RememberTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -113,6 +114,7 @@
 		C4F71BEA2D84F11400F4CFC2 = {
 			isa = PBXGroup;
 			children = (
+				C40975322DEAB624003A08EB /* Draft.playground */,
 				C4F71BF52D84F11400F4CFC2 /* Remember */,
 				C44E34172D870D45008EC3BF /* RememberCore */,
 				C4F71C0A2D84F11600F4CFC2 /* RememberTests */,

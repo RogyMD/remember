@@ -146,7 +146,7 @@ public struct MemoryList {
           await send(.memoryForm(.dismiss))
         guard let updatedMemory else { return }
         do {
-          try await database.updateOrInsertMemory(updatedMemory)
+          try await database.updateMemory(updatedMemory)
         } catch {
           reportIssue(error)
         }

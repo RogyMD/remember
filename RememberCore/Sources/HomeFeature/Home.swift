@@ -67,7 +67,7 @@ public struct Home {
         }
       case .requestStoreReview:
         return .run { _ in
-          try? await requestReviewAsync()
+          try? await Self.requestReviewAsync()
         }
       case .listButtonTapped:
         state.memoryList = .empty
@@ -85,7 +85,7 @@ public struct Home {
           if memory.items.count > .zero && memory.location != nil && memory.notes.isEmpty == false {
             await send(.requestStoreReview)
           }
-          try await database.updateOrInsertMemory(memory)
+          try await database.updateMemory(memory)
         }
       case .memoryForm(.cancelButtonTapped):
         state.memoryForm = nil
@@ -126,7 +126,7 @@ public struct Home {
           await send(.createMemory(memory, croppedImage))
           try await database.saveMemory(memory, image.image, croppedImage)
           if image.caption?.isEmpty == false || image.location != nil {
-            try? await requestReviewAsync()
+            await send(.requestStoreReview)
           }
         }
       case .searchMemory(.presented(.resultMemoryTapped)):
@@ -152,6 +152,28 @@ public struct Home {
 //    }
   }
   
+  static func requestReviewAsync() async throws  {
+    @Dependency(\.storeReview) var requestReview
+    @Dependency(\.mainRunLoop) var mainRunLoop
+    @Dependency(\.database) var database
+    @Shared(.lastReviewRequestTimeInterval) var lastReviewRequestTimeInterval
+    
+    let hasRequestedReviewBefore = lastReviewRequestTimeInterval != .zero
+    let timeSinceLastReviewRequest = mainRunLoop.now.date.timeIntervalSince1970 - lastReviewRequestTimeInterval
+    let weekInSeconds: Double = 60 * 60 * 24 * 7
+    
+    let shouldRequestReview = try await database.hasMemories()
+    
+    if shouldRequestReview
+        && (!hasRequestedReviewBefore || timeSinceLastReviewRequest >= weekInSeconds)
+    {
+      await requestReview()
+      $lastReviewRequestTimeInterval.withLock {
+        $0 = mainRunLoop.now.date.timeIntervalSince1970
+      }
+    }
+  }
+  
   //  private func memoryFormAction(_ action: MemoryForm.Action, state: inout State) -> EffectOf<Self> {
   //      switch action {
   //      case .<#action#>:
@@ -160,27 +182,7 @@ public struct Home {
   //    }
 }
 
-func requestReviewAsync() async throws  {
-  @Dependency(\.storeReview) var requestReview
-  @Dependency(\.mainRunLoop) var mainRunLoop
-  @Dependency(\.database) var database
-  @Shared(.lastReviewRequestTimeInterval) var lastReviewRequestTimeInterval
-  
-  let hasRequestedReviewBefore = lastReviewRequestTimeInterval != .zero
-  let timeSinceLastReviewRequest = mainRunLoop.now.date.timeIntervalSince1970 - lastReviewRequestTimeInterval
-  let weekInSeconds: Double = 60 * 60 * 24 * 7
-  
-  let shouldRequestReview = try await database.hasMemories()
-  
-  if shouldRequestReview
-      && (!hasRequestedReviewBefore || timeSinceLastReviewRequest >= weekInSeconds)
-  {
-    await requestReview()
-    $lastReviewRequestTimeInterval.withLock {
-      $0 = mainRunLoop.now.date.timeIntervalSince1970
-    }
-  }
-}
+
 
 extension CapturedImage {
   func previewImageAndPoint() async -> (UIImage, CGPoint) {

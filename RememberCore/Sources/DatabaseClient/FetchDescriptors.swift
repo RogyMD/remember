@@ -18,6 +18,14 @@ extension FetchDescriptor where T == MemoryModel {
     ])
   }
   
+  static func memory(id: String) -> Self {
+    descriptor(
+      predicate: #Predicate { memory in
+        memory.id == id
+      }
+    )
+  }
+  
   static func search(_ query: String) -> Self {
     descriptor(
       predicate: #Predicate { memory in

@@ -10,27 +10,72 @@ extension CGSize {
 }
 
 extension Memory {
+  static let dateFormatter: DateFormatter = {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd-HH-mm-ss"
+    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    return dateFormatter
+  }()
+  
+  public var memoryDirectoryName: String {
+    let maxItems = 3
+    let date = Self.dateFormatter.string(from: created)
+    let extraItems = items.count - maxItems
+    var itemsPrefix = items
+      .prefix(maxItems)
+      .map(\.name.sanitizedForFolderName)
+      .joined(separator: "-")
+    if extraItems > .zero {
+      itemsPrefix += "+\(extraItems)"
+    }
+    return itemsPrefix.nonEmpty.map({  [$0, date].joined(separator: "_") }) ?? date
+  }
+  public var memoryDirectoryURL: URL {
+    URL.memoryDirectory.appending(path: memoryDirectoryName, directoryHint: .isDirectory)
+  }
   public var originalImageURL: URL {
-    URL.imagesDirectory.appendingPathComponent(id).appendingPathExtension("png")
+    memoryDirectoryURL.appendingPathComponent("original").appendingPathExtension("png")
   }
   public var previewImageURL: URL {
-    URL.imagesDirectory.appendingPathComponent(id + .previewSuffix).appendingPathExtension("png")
+    memoryDirectoryURL.appendingPathComponent("preview").appendingPathExtension("png")
   }
   public var thumbnailImageURL: URL {
-    URL.imagesDirectory.appendingPathComponent(id + .thumbnailSuffix).appendingPathExtension("png")
+    memoryDirectoryURL.appendingPathComponent("thumbnail").appendingPathExtension("png")
+  }
+  public var textFileURL: URL {
+    memoryDirectoryURL.appendingPathComponent("memory").appendingPathExtension("txt")
   }
   public var previewImage: UIImage {
-    UIImage(contentsOfFile: previewImageURL.path()) ?? UIImage(systemName: "exclamationmark.octagon.fill")!
+    UIImage(contentsOfFile: previewImageURL.path()) ?? UIImage(systemName: "exclamationmark.octagon.fill") ?? UIImage()
   }
   public var thumbnailImage: UIImage {
     if let thumbnail = UIImage(contentsOfFile: thumbnailImageURL.path()) {
       return thumbnail
     } else {
-      return UIImage(systemName: "exclamationmark.octagon.fill")!
+      return UIImage(systemName: "exclamationmark.octagon.fill") ?? UIImage()
     }
   }
 }
 
 extension URL {
   public static let imagesDirectory: URL = documentsDirectory.appendingPathComponent("Images", isDirectory: true)
+  public static let memoryDirectory: URL = documentsDirectory.appendingPathComponent("Memories", isDirectory: true)
+}
+
+extension String {
+  var sanitizedForFolderName: String {
+    let sanitized = unicodeScalars.map { CharacterSet.folderNameAllowed.contains($0) ? Character($0) : "_" }
+    return String(String(sanitized)
+      .replacingOccurrences(of: " ", with: "_")
+      .prefix(15))
+  }
+}
+
+extension CharacterSet {
+  static let folderNameAllowed: CharacterSet = .urlPathAllowed.subtracting(.disallowedSymbols)
+  private static let disallowedSymbols = CharacterSet(charactersIn: "/:\\?%*|\"<>{}[]()")
+}
+
+extension CharacterSet {
+  static let invalidCharacters = CharacterSet(charactersIn: "/:\\?%*|\"<>")
 }

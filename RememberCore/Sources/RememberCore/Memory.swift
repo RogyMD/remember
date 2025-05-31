@@ -5,7 +5,7 @@ public struct Memory: Sendable, Equatable, Identifiable {
   public let id: String
   public let created: Date
   public var modified: Date
-  public var  notes: String
+  public var notes: String
   public var items: IdentifiedArrayOf<MemoryItem>
   public var tags: IdentifiedArrayOf<MemoryTag>
   public var location: MemoryLocation?
