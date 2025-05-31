@@ -75,7 +75,7 @@ extension DatabaseClient: DependencyKey {
         let memoryFile = MemoryFile(memory: memory)
         let existingMemoryFile = MemoryFile(memory: existingMemory)
         if memoryFile != existingMemoryFile {
-          try FileManager.default.removeItem(at: existingMemory.textFileURL)
+          try? FileManager.default.removeItem(at: existingMemory.textFileURL)
           let data = try MemoryFile.encoder.encode(memoryFile)
           FileManager.default.createFile(atPath: existingMemory.textFileURL.path(), contents: data)
         }
@@ -223,7 +223,9 @@ extension Memory {
       id: model.id,
       created: model.created,
       notes: model.notes,
-      items: model.items.map(MemoryItem.init),
+      items: model.items
+        .map(MemoryItem.init)
+        .sorted(by: { $0.name < $1.name }),
       tags: model.tags.map(MemoryTag.init),
       location: model.location.map(MemoryLocation.init)
     )

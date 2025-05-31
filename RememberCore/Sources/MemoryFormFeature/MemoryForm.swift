@@ -218,14 +218,16 @@ public struct MemoryFormView: View {
           }
           .animation(.linear, value: store.memoryItemPicker == nil)
           
-          HStack {
+          Button {
+            store.send(.imageRowTapped, animation: .linear)
+          } label: {
             // FIXME: do not have this map  here.
-            Text(store.memory.items.map(\.name).sorted().joined(separator: ", "))
+            Text(store.memory.items.map(\.name).sorted().joined(separator: ", ").nonEmpty ?? "Tap to label items")
               .font(.body)
               .fontWeight(.semibold)
               .multilineTextAlignment(.leading)
-              .lineLimit(nil)
-//              .fixedSize(horizontal: false, vertical: true)
+              .lineLimit(0)
+              .foregroundStyle(Color.label)
           }
         }
         
@@ -345,7 +347,6 @@ public struct MemoryFormView: View {
         store.send(.doneButtonTapped, animation: .linear)
       }
       .bold()
-      .disabled(store.isRememberButtonDisabled)
     }
     ToolbarItem(placement: .topBarLeading) {
       if store.isNew {
@@ -418,7 +419,7 @@ extension MemoryForm.State {
 
 extension Memory {
   public var name: String {
-    items.map(\.name).sorted().joined(separator: ", ")
+    items.map(\.name).sorted().joined(separator: ", ").nonEmpty ?? "No items"
   }
   @MainActor
   public var imageAligment: Alignment {

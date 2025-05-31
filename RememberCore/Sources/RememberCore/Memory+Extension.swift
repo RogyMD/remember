@@ -12,23 +12,24 @@ extension CGSize {
 extension Memory {
   static let dateFormatter: DateFormatter = {
     let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyy-MM-dd-HH-mm-ss"
+    dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
     dateFormatter.locale = Locale(identifier: "en_US_POSIX")
     return dateFormatter
   }()
   
   public var memoryDirectoryName: String {
     let maxItems = 3
-    let date = Self.dateFormatter.string(from: created)
+    let suffix = [String(id.prefix(3)), Self.dateFormatter.string(from: created)].joined(separator: "_")
     let extraItems = items.count - maxItems
     var itemsPrefix = items
+      .sorted(by: { $0.name < $1.name })
       .prefix(maxItems)
       .map(\.name.sanitizedForFolderName)
       .joined(separator: "-")
     if extraItems > .zero {
       itemsPrefix += "+\(extraItems)"
     }
-    return itemsPrefix.nonEmpty.map({  [$0, date].joined(separator: "_") }) ?? date
+    return itemsPrefix.nonEmpty.map({ [$0, suffix].joined(separator: "_") }) ?? suffix
   }
   public var memoryDirectoryURL: URL {
     URL.memoryDirectory.appending(path: memoryDirectoryName, directoryHint: .isDirectory)
@@ -65,15 +66,13 @@ extension URL {
 extension String {
   var sanitizedForFolderName: String {
     let sanitized = unicodeScalars.map { CharacterSet.folderNameAllowed.contains($0) ? Character($0) : "_" }
-    return String(String(sanitized)
-      .replacingOccurrences(of: " ", with: "_")
-      .prefix(15))
+    return String(sanitized.prefix(15))
   }
 }
 
 extension CharacterSet {
   static let folderNameAllowed: CharacterSet = .urlPathAllowed.subtracting(.disallowedSymbols)
-  private static let disallowedSymbols = CharacterSet(charactersIn: "/:\\?%*|\"<>{}[]()")
+  private static let disallowedSymbols = CharacterSet(charactersIn: "/:\\?%*|\"<>{}[]() ")
 }
 
 extension CharacterSet {

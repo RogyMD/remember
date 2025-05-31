@@ -66,7 +66,8 @@ public struct MemoryList {
     case deleteRows(Date, IndexSet)
     case addMemory(Memory)
     case loadDataIfNeeded
-    case updateMemories([Memory])
+    case memoriesLoaded([Memory])
+    case updateMemory(Memory)
   }
   
   public init() {}
@@ -85,14 +86,17 @@ public struct MemoryList {
           return .run { [database] send in
             do {
               let memories = try await database.fetchMemories()
-              await send(.updateMemories(memories))
+              await send(.memoriesLoaded(memories))
             } catch {
               reportIssue(error)
             }
           }
-        case .updateMemories(let memories):
+        case .memoriesLoaded(let memories):
           state.isDataLoaded = true
           state.updateMemories(memories)
+          return .none
+        case .updateMemory(let memory):
+          state.memories.updateOrAppend(memory)
           return .none
         case .memoryTapped(let id):
           guard let memory = state.memories[id: id] else { return .none }
@@ -138,7 +142,6 @@ public struct MemoryList {
           let existing = state.memories[id: memory.id],
           memory.modified != existing.modified {
         updatedMemory = memory
-        state.memories.updateOrAppend(memory)
       } else {
         updatedMemory = nil
       }
@@ -147,6 +150,7 @@ public struct MemoryList {
         guard let updatedMemory else { return }
         do {
           try await database.updateMemory(updatedMemory)
+          await send(.updateMemory(updatedMemory))
         } catch {
           reportIssue(error)
         }

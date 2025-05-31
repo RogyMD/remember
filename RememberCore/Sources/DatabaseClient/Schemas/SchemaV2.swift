@@ -76,13 +76,13 @@ public enum SchemaV2: VersionedSchema {
     init(
       id: String,
       created: Date = Date(),
-      modified: Date = Date(),
+      modified: Date? = nil,
       name: String,
       center: Point
     ) {
       self.id = id
       self.created = created
-      self.modified = modified
+      self.modified = modified ?? created
       self.name = name
       self.center = center
     }
