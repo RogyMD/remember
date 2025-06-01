@@ -70,6 +70,7 @@ public struct MemoryForm: Sendable {
       action in
       switch action {
       case .removeLocationButtonTapped:
+        state.memory.modified = now
         return .send(.binding(.set(\.memory.location, nil)))
       case .openInMapsButtonTapped:
         guard let memoryLocation = state.memory.location else {

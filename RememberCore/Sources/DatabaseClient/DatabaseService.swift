@@ -53,7 +53,7 @@ actor DatabaseService {
     } else {
       modelContainer.deleteAllData()
     }
-    ModelContainer.removeDatabaseFiles()
+    try FileManager.default.removeItem(at: .memoryDirectory)
     ModelContainer.appModelContainer = try setupModelContainer(url: .storeURL)
     Self.shared = .init(modelContainer: .appModelContainer)
   }

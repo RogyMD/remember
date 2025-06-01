@@ -9,17 +9,13 @@ enum ModelError: LocalizedError {
 func setupModelContainer(
   for versionedSchema: VersionedSchema.Type = SchemaLatest.self,
   migrationPlan: SchemaMigrationPlan.Type = AppSchemaMigrationPlan.self,
-  url: URL? = nil,
+  url: URL,
   rollback: Bool = false
 ) throws -> ModelContainer {
   do {
+    try FileManager.default.createDirectories(to: url.deletingLastPathComponent())
     let schema = Schema(versionedSchema: versionedSchema)
-    let config: ModelConfiguration =
-    if let url {
-      .init(schema: schema, url: url)
-    } else {
-      .init(schema: schema)
-    }
+    let config: ModelConfiguration = .init(schema: schema, url: url)
     let container = try ModelContainer(
         for: schema,
         migrationPlan: migrationPlan,//rollback ? RollbackMigrationPlan.self : MigrationPlan.self,
