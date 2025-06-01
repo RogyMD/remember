@@ -54,7 +54,7 @@ actor DatabaseService {
       modelContainer.deleteAllData()
     }
     ModelContainer.removeDatabaseFiles()
-    ModelContainer.appModelContainer = try setupModelContainer(url: ModelConfiguration.storeURL)
+    ModelContainer.appModelContainer = try setupModelContainer(url: .storeURL)
     Self.shared = .init(modelContainer: .appModelContainer)
   }
   

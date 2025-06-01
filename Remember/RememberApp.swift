@@ -1,6 +1,7 @@
 import SwiftUI
 import HomeFeature
 import ComposableArchitecture
+import DatabaseClient
 
 @main
 struct RememberApp: App {
@@ -9,10 +10,14 @@ struct RememberApp: App {
   ) {
     Home()
   }
+  @Dependency(\.database) var database
   
   var body: some Scene {
     WindowGroup {
       HomeView(store: store)
+        .task {
+          await database.configure()
+        }
     }
   }
 }

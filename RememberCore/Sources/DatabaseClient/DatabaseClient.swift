@@ -7,6 +7,8 @@ import IssueReporting
 @DependencyClient
 public struct DatabaseClient: Sendable {
   @DependencyEndpoint
+  public var configure: @Sendable () async -> Void
+  @DependencyEndpoint
   public var hasMemories: @Sendable () async throws -> Bool
   @DependencyEndpoint
   public var fetchMemories: @Sendable () async throws -> [Memory]
@@ -49,6 +51,12 @@ extension DatabaseClient: DependencyKey {
   public static let liveValue: DatabaseClient = {
     let database: @Sendable () -> DatabaseService = { DatabaseService.shared }
     return DatabaseClient(
+      configure: {
+        let service = database()
+        await FileManager.default.migrateMemoriesToNewFileStructureIfNeeded({
+          try await service.fetch(.memories, compactMap: Memory.init)
+        })
+      },
       hasMemories: {
         try await database().hasMemories()
       },
@@ -134,13 +142,33 @@ struct MemoryFile: Equatable, Codable {
 
 // TODO: Move to a Dependency
 extension FileManager {
-  @discardableResult
-  func saveMemory(_ memory: Memory, image: UIImage, previewImage: UIImage) async throws -> Bool {
+  func createDirectories(to targetPath: URL) throws {
+    var directory = targetPath
+    var missingDirectories: [String] = []
+    while fileExists(atPath: directory.path()) == false {
+      missingDirectories.append(directory.lastPathComponent)
+      directory = directory.deletingLastPathComponent()
+    }
+    missingDirectories.reverse()
+    while directory != targetPath, missingDirectories.isEmpty == false {
+      let path = missingDirectories.removeFirst()
+      directory = directory.appending(path: path)
+      try createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+  }
+  func createMemoriesDirectoryIfNeeded(memory: Memory) throws {
     let memoryDirectoryURL = memory.memoryDirectoryURL
     if fileExists(atPath: URL.memoryDirectory.path()) == false {
       try createDirectory(at: URL.memoryDirectory, withIntermediateDirectories: true)
     }
-    try createDirectory(at: memoryDirectoryURL, withIntermediateDirectories: true)
+    if fileExists(atPath: memoryDirectoryURL.path()) == false {
+      try createDirectory(at: memoryDirectoryURL, withIntermediateDirectories: true)
+    }
+  }
+  
+  @discardableResult
+  func saveMemory(_ memory: Memory, image: UIImage, previewImage: UIImage) async throws -> Bool {
+    try createDirectories(to: memory.memoryDirectoryURL)
     let memoryFile = MemoryFile(memory: memory)
     let data = try MemoryFile.encoder.encode(memoryFile)
     guard createFile(atPath: memory.textFileURL.path(), contents: data) else {
@@ -155,33 +183,7 @@ extension FileManager {
       assertionFailure("Couldn't save image at \(memory.previewImage)")
       return false
     }
-    let scale = await MainActor.run { UIScreen.main.scale }
-    let thumbnailImageSize = CGSize(
-      width: CGSize.thumbnailSize.width * scale,
-      height: CGSize.thumbnailSize.height * scale
-    )
-    
-    let aspectWidth = thumbnailImageSize.width / previewImage.size.width
-    let aspectHeight = thumbnailImageSize.height / previewImage.size.height
-    let aspectFillScale = max(aspectWidth, aspectHeight)
-
-    let scaledSize = CGSize(
-      width: previewImage.size.width * aspectFillScale,
-      height: previewImage.size.height * aspectFillScale
-    )
-    
-    let format = UIGraphicsImageRendererFormat()
-    format.scale = 1
-    let renderer = UIGraphicsImageRenderer(size: scaledSize, format: format)
-    let resizedImage = renderer.image { _ in
-      previewImage.draw(in: CGRect(origin: .zero, size: scaledSize))
-    }
-
-    if let thumbnailImage = resizedImage.cgImage?
-      .cropping(to: CGRect(
-        origin: CGPoint(x: (scaledSize.width - thumbnailImageSize.width) / 2, y: (scaledSize.height - thumbnailImageSize.height) / 2),
-        size: thumbnailImageSize))
-        .map(UIImage.init) {
+    if let thumbnailImage = await previewImage.thumbnailImage() {
       guard createFile(atPath: memory.thumbnailImageURL.path(), contents: thumbnailImage.pngData()) else {
         assertionFailure("Couldn't save image at \(memory.previewImage)")
         return false
@@ -193,27 +195,69 @@ extension FileManager {
     }
   }
   
-  @discardableResult
-  func saveImage(_ image: UIImage, id: String) throws -> Bool {
-    if fileExists(atPath: URL.imagesDirectory.path(), isDirectory: nil) == false {
-      try createDirectory(at: .imagesDirectory, withIntermediateDirectories: true)
+  func migrateMemoriesToNewFileStructureIfNeeded(_ fetchMemories: @Sendable () async throws -> [Memory]) async {
+    let shouldMigrate = fileExists(atPath: URL.imagesDirectory.path())
+    guard shouldMigrate else { return }
+    do {
+      let memories = try await fetchMemories()
+      for memory in memories {
+        do {
+          try migrateMemoryFilesToNewStructure(memory)
+        } catch {
+          reportIssue(error)
+        }
+      }
+      try removeItem(at: .imagesDirectory)
+    } catch {
+      reportIssue(error)
     }
-    let path = URL.imagesDirectory.appendingPathComponent(id).appendingPathExtension("png").path()
-    return createFile(atPath: path, contents: image.pngData())
   }
   
-  func deleteImages(id: String) {
-    [
-      id,
-      (id + .thumbnailSuffix),
-      (id + .previewSuffix)
-    ].forEach { imageName in
-      try? removeItem(
-        at: URL.imagesDirectory
-        .appendingPathComponent(imageName)
-        .appendingPathExtension("png")
-      )
+  func migrateMemoryFilesToNewStructure(_ memory: Memory) throws {
+    try createDirectories(to: memory.memoryDirectoryURL)
+    try moveItem(at: memory.deprecated_originalImageURL, to: memory.originalImageURL)
+    try moveItem(at: memory.deprecated_previewImageURL, to: memory.previewImageURL)
+    try moveItem(at: memory.deprecated_thumbnailImageURL, to: memory.thumbnailImageURL)
+    let memoryFile = MemoryFile(memory: memory)
+    try createFile(atPath: memory.textFileURL.path(), contents: MemoryFile.encoder.encode(memoryFile))
+  }
+}
+
+extension UIImage {
+  func thumbnailImage() async -> UIImage? {
+    let scale = await MainActor.run { UIScreen.main.scale }
+    let thumbnailImageSize = CGSize(
+      width: CGSize.thumbnailSize.width * scale,
+      height: CGSize.thumbnailSize.height * scale
+    )
+    
+    let aspectWidth = thumbnailImageSize.width / size.width
+    let aspectHeight = thumbnailImageSize.height / size.height
+    let aspectFillScale = max(aspectWidth, aspectHeight)
+
+    let scaledSize = CGSize(
+      width: size.width * aspectFillScale,
+      height: size.height * aspectFillScale
+    )
+    
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1
+    let renderer = UIGraphicsImageRenderer(size: scaledSize, format: format)
+    let resizedImage = renderer.image { _ in
+      self.draw(in: CGRect(origin: .zero, size: scaledSize))
     }
+
+    return resizedImage.cgImage?
+      .cropping(
+        to: CGRect(
+          origin: CGPoint(
+            x: (scaledSize.width - thumbnailImageSize.width) / 2,
+            y: (scaledSize.height - thumbnailImageSize.height) / 2
+          ),
+          size: thumbnailImageSize
+        )
+      )
+      .map(UIImage.init)
   }
 }
 

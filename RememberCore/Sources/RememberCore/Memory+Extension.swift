@@ -58,6 +58,18 @@ extension Memory {
   }
 }
 
+extension Memory {
+  public var deprecated_originalImageURL: URL {
+    URL.imagesDirectory.appendingPathComponent(id).appendingPathExtension("png")
+  }
+  public var deprecated_previewImageURL: URL {
+    URL.imagesDirectory.appendingPathComponent(id + .previewSuffix).appendingPathExtension("png")
+  }
+  public var deprecated_thumbnailImageURL: URL {
+    URL.imagesDirectory.appendingPathComponent(id + .thumbnailSuffix).appendingPathExtension("png")
+  }
+}
+
 extension URL {
   public static let imagesDirectory: URL = documentsDirectory.appendingPathComponent("Images", isDirectory: true)
   public static let memoryDirectory: URL = documentsDirectory.appendingPathComponent("Memories", isDirectory: true)
