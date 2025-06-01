@@ -58,6 +58,7 @@ extension Memory {
   }
 }
 
+// TODO: V2 - To be removed
 extension Memory {
   public var deprecated_originalImageURL: URL {
     URL.imagesDirectory.appendingPathComponent(id).appendingPathExtension("png")

@@ -2,7 +2,7 @@ import Dependencies
 import DependenciesMacros
 import RememberCore
 import UIKit
-import IssueReporting
+import FileClient
 
 @DependencyClient
 public struct DatabaseClient: Sendable {
@@ -32,6 +32,15 @@ public struct DatabaseClient: Sendable {
   public var deleteItem: @Sendable (String) async throws -> Void
   @DependencyEndpoint
   public var removeAllData: @Sendable () async throws -> Void
+  @DependencyEndpoint
+  public var sync: @Sendable () async throws -> SyncResult
+}
+
+extension DatabaseClient {
+  public struct SyncResult {
+    public let invalidMemories: Set<Memory.ID>
+    public let orphanDirectories: Set<URL>
+  }
 }
 
 extension DependencyValues {
@@ -50,10 +59,11 @@ extension DatabaseClient: TestDependencyKey {
 extension DatabaseClient: DependencyKey {
   public static let liveValue: DatabaseClient = {
     let database: @Sendable () -> DatabaseService = { DatabaseService.shared }
+    @Dependency(\.fileClient) var fileClient
     return DatabaseClient(
       configure: {
         let service = database()
-        await FileManager.default.migrateMemoriesToNewFileStructureIfNeeded({
+        await fileClient.migrateMemoriesToNewFileStructureIfNeeded({
           try await service.fetch(.memories, compactMap: Memory.init)
         })
       },
@@ -83,20 +93,19 @@ extension DatabaseClient: DependencyKey {
         let memoryFile = MemoryFile(memory: memory)
         let existingMemoryFile = MemoryFile(memory: existingMemory)
         if memoryFile != existingMemoryFile {
-          try? FileManager.default.removeItem(at: existingMemory.textFileURL)
           let data = try MemoryFile.encoder.encode(memoryFile)
-          FileManager.default.createFile(atPath: existingMemory.textFileURL.path(), contents: data)
+          fileClient.createFile(data, existingMemory.textFileURL, true)
         }
         let newMemoryDirectory = memory.memoryDirectoryURL
         let existingMemoryDirectory = existingMemory.memoryDirectoryURL
         if newMemoryDirectory != existingMemoryDirectory {
-          try FileManager.default.moveItem(at: existingMemoryDirectory, to: newMemoryDirectory)
+          try fileClient.moveItem(existingMemoryDirectory, newMemoryDirectory)
         }
         
       },
       saveMemory: { memory, image, previewImage in
         try await database().updateOrInsertMemory(memory)
-        try await FileManager.default.saveMemory(memory, image: image, previewImage: previewImage)
+        try await fileClient.saveMemory(memory, image: image, previewImage: previewImage)
       },
       updateItem: { item in
         try await database().updateItem(item)
@@ -106,159 +115,19 @@ extension DatabaseClient: DependencyKey {
           return
         }
         try await database().deleteMemory(id: id)
-        try FileManager.default.removeItem(at: memory.memoryDirectoryURL)
+        try fileClient.removeItem(memory.memoryDirectoryURL)
       },
       deleteItem: { id in
         try await database().deleteItem(id: id)
       },
       removeAllData: {
         try await database().removeAllData()
+      },
+      sync: {
+        fatalError()
       }
     )
   }()
-}
-
-struct MemoryFile: Equatable, Codable {
-  var created: String
-  var items: [String]?
-  var tags: [String]?
-  var location: [String: Double]?
-  var notes: String?
-  init(memory: Memory) {
-    created = DateFormatter.localizedString(from: memory.created, dateStyle: .medium, timeStyle: .medium)
-    items = memory.items.nonEmpty?.map(\.name)
-    tags = memory.tags.nonEmpty?.map(\.label)
-    notes = memory.notes.nonEmpty
-    location = memory.location.map({ location in
-      ["latitude": location.lat, "longitude": location.long]
-    })
-  }
-  static let encoder: JSONEncoder = {
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-    return encoder
-  }()
-}
-
-// TODO: Move to a Dependency
-extension FileManager {
-  func createDirectories(to targetPath: URL) throws {
-    var directory = targetPath
-    var missingDirectories: [String] = []
-    while fileExists(atPath: directory.path()) == false {
-      missingDirectories.append(directory.lastPathComponent)
-      directory = directory.deletingLastPathComponent()
-    }
-    missingDirectories.reverse()
-    while directory != targetPath, missingDirectories.isEmpty == false {
-      let path = missingDirectories.removeFirst()
-      directory = directory.appending(path: path)
-      try createDirectory(at: directory, withIntermediateDirectories: true)
-    }
-  }
-  func createMemoriesDirectoryIfNeeded(memory: Memory) throws {
-    let memoryDirectoryURL = memory.memoryDirectoryURL
-    if fileExists(atPath: URL.memoryDirectory.path()) == false {
-      try createDirectory(at: URL.memoryDirectory, withIntermediateDirectories: true)
-    }
-    if fileExists(atPath: memoryDirectoryURL.path()) == false {
-      try createDirectory(at: memoryDirectoryURL, withIntermediateDirectories: true)
-    }
-  }
-  
-  @discardableResult
-  func saveMemory(_ memory: Memory, image: UIImage, previewImage: UIImage) async throws -> Bool {
-    try createDirectories(to: memory.memoryDirectoryURL)
-    let memoryFile = MemoryFile(memory: memory)
-    let data = try MemoryFile.encoder.encode(memoryFile)
-    guard createFile(atPath: memory.textFileURL.path(), contents: data) else {
-      assertionFailure("Couldn't save json at \(memory.textFileURL)")
-      return false
-    }
-    guard createFile(atPath: memory.originalImageURL.path(), contents: image.pngData()) else {
-      assertionFailure("Couldn't save image at \(memory.originalImageURL)")
-      return false
-    }
-    guard createFile(atPath: memory.previewImageURL.path(), contents: previewImage.pngData()) else {
-      assertionFailure("Couldn't save image at \(memory.previewImage)")
-      return false
-    }
-    if let thumbnailImage = await previewImage.thumbnailImage() {
-      guard createFile(atPath: memory.thumbnailImageURL.path(), contents: thumbnailImage.pngData()) else {
-        assertionFailure("Couldn't save image at \(memory.previewImage)")
-        return false
-      }
-      return true
-    } else {
-      reportIssue("Couldn't generate thumbnail for image: \(previewImage)")
-      return false
-    }
-  }
-  
-  func migrateMemoriesToNewFileStructureIfNeeded(_ fetchMemories: @Sendable () async throws -> [Memory]) async {
-    let shouldMigrate = fileExists(atPath: URL.imagesDirectory.path())
-    guard shouldMigrate else { return }
-    do {
-      let memories = try await fetchMemories()
-      for memory in memories {
-        do {
-          try migrateMemoryFilesToNewStructure(memory)
-        } catch {
-          reportIssue(error)
-        }
-      }
-      try removeItem(at: .imagesDirectory)
-    } catch {
-      reportIssue(error)
-    }
-  }
-  
-  func migrateMemoryFilesToNewStructure(_ memory: Memory) throws {
-    try createDirectories(to: memory.memoryDirectoryURL)
-    try moveItem(at: memory.deprecated_originalImageURL, to: memory.originalImageURL)
-    try moveItem(at: memory.deprecated_previewImageURL, to: memory.previewImageURL)
-    try moveItem(at: memory.deprecated_thumbnailImageURL, to: memory.thumbnailImageURL)
-    let memoryFile = MemoryFile(memory: memory)
-    try createFile(atPath: memory.textFileURL.path(), contents: MemoryFile.encoder.encode(memoryFile))
-  }
-}
-
-extension UIImage {
-  func thumbnailImage() async -> UIImage? {
-    let scale = await MainActor.run { UIScreen.main.scale }
-    let thumbnailImageSize = CGSize(
-      width: CGSize.thumbnailSize.width * scale,
-      height: CGSize.thumbnailSize.height * scale
-    )
-    
-    let aspectWidth = thumbnailImageSize.width / size.width
-    let aspectHeight = thumbnailImageSize.height / size.height
-    let aspectFillScale = max(aspectWidth, aspectHeight)
-
-    let scaledSize = CGSize(
-      width: size.width * aspectFillScale,
-      height: size.height * aspectFillScale
-    )
-    
-    let format = UIGraphicsImageRendererFormat()
-    format.scale = 1
-    let renderer = UIGraphicsImageRenderer(size: scaledSize, format: format)
-    let resizedImage = renderer.image { _ in
-      self.draw(in: CGRect(origin: .zero, size: scaledSize))
-    }
-
-    return resizedImage.cgImage?
-      .cropping(
-        to: CGRect(
-          origin: CGPoint(
-            x: (scaledSize.width - thumbnailImageSize.width) / 2,
-            y: (scaledSize.height - thumbnailImageSize.height) / 2
-          ),
-          size: thumbnailImageSize
-        )
-      )
-      .map(UIImage.init)
-  }
 }
 
 extension Memory {

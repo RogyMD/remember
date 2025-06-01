@@ -1,9 +1,11 @@
 import Foundation
 import SwiftData
 import IssueReporting
+import FileClient
+import Dependencies
 
 enum ModelError: LocalizedError {
-    case setup(error: Error)
+  case setup(error: Error)
 }
 @discardableResult
 func setupModelContainer(
@@ -13,7 +15,8 @@ func setupModelContainer(
   rollback: Bool = false
 ) throws -> ModelContainer {
   do {
-    try FileManager.default.createDirectories(to: url.deletingLastPathComponent())
+    @Dependency(\.fileClient) var fileClient
+    try fileClient.createDirectory(url.deletingLastPathComponent())
     let schema = Schema(versionedSchema: versionedSchema)
     let config: ModelConfiguration = .init(schema: schema, url: url)
     let container = try ModelContainer(
@@ -44,11 +47,12 @@ extension ModelContainer {
   }()
   
   public static func removeDatabaseFiles() {
+    @Dependency(\.fileClient) var fileClient
     let files = ["database.sqlite-wal", "database.sqlite-shm", "database.sqlite"]
     for file in files {
       let fileURL = URL.databaseDirectory.appending(path: file)
       do {
-        try FileManager.default.removeItem(at: fileURL)
+        try fileClient.removeItem(fileURL)
         Logger.database.info("Removed database at \(fileURL)")
       } catch {
         reportIssue(error)
@@ -57,19 +61,14 @@ extension ModelContainer {
   }
   
   public static func moveDatabaseFilesIfNeeded() {
-    let fileManager = FileManager.default
-    guard fileManager.fileExists(atPath: URL.deprected_storeURL.path()) else { return }
-    do {
-      try fileManager.createDirectories(to: .databaseDirectory)
-    } catch {
-      reportIssue(error)
-    }
+    @Dependency(\.fileClient) var fileClient
+    guard fileClient.itemExists(URL.deprected_storeURL) else { return }
     let files = ["database.sqlite-wal", "database.sqlite-shm", "database.sqlite"]
     for file in files {
       let fileURL = URL.documentsDirectory.appending(path: file)
       do {
         let newFileURL = URL.databaseDirectory.appendingPathComponent(file)
-        try FileManager.default.moveItem(at: fileURL, to: newFileURL)
+        try fileClient.moveItem(fileURL, newFileURL)
         Logger.database.info("Moved database to \(newFileURL)")
       } catch {
         reportIssue(error)
