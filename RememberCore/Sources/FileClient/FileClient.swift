@@ -14,6 +14,8 @@ public struct FileClient: Sendable {
   public var removeItem: @Sendable (URL) throws -> Void
   @DependencyEndpoint
   public var itemExists: @Sendable (URL) -> Bool = { _ in false }
+  @DependencyEndpoint
+  public var contentsOfDirectory: @Sendable (URL) throws -> [String]
 }
 
 extension DependencyValues {
@@ -52,6 +54,9 @@ extension FileClient: DependencyKey {
       },
       itemExists: {
         fileManager().fileExists(atPath: $0.path())
+      },
+      contentsOfDirectory: {
+        try fileManager().contentsOfDirectory(atPath: $0.path())
       }
     )
   }()

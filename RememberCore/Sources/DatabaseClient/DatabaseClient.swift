@@ -33,13 +33,17 @@ public struct DatabaseClient: Sendable {
   @DependencyEndpoint
   public var removeAllData: @Sendable () async throws -> Void
   @DependencyEndpoint
-  public var sync: @Sendable () async throws -> SyncResult
+  public var syncWithFileSystem: @Sendable () async throws -> SyncResult
 }
 
 extension DatabaseClient {
   public struct SyncResult {
-    public let invalidMemories: Set<Memory.ID>
-    public let orphanDirectories: Set<URL>
+    public var invalidMemories: Set<Memory.ID>
+    public var orphanItems: Set<URL>
+    init(invalidMemories: Set<Memory.ID> = [], orphanItems: Set<URL> = []) {
+      self.invalidMemories = invalidMemories
+      self.orphanItems = orphanItems
+    }
   }
 }
 
@@ -123,14 +127,78 @@ extension DatabaseClient: DependencyKey {
       removeAllData: {
         try await database().removeAllData()
       },
-      sync: {
-        fatalError()
+      syncWithFileSystem: {
+        var contentItems = Set(try fileClient.contentsOfDirectory(.memoryDirectory))
+        contentItems.remove(URL.rememberConfig.lastPathComponent)
+        var syncResult = SyncResult()
+        var verifiedItems: Set<String> = []
+        let memories = try await database().fetch(.memories, compactMap: Memory.init)
+        for memory in memories {
+          let memoryDirectoryURL = memory.memoryDirectoryURL
+          let isValid = (
+            fileClient.itemExists(memory.originalImageURL) &&
+            fileClient.itemExists(memory.previewImageURL) &&
+            fileClient.itemExists(memory.thumbnailImageURL) &&
+            fileClient.itemExists(memory.textFileURL)
+          )
+          if isValid == false {
+            syncResult.invalidMemories.insert(memory.id)
+            if contentItems.contains(memoryDirectoryURL.lastPathComponent) {
+              syncResult.orphanItems.insert(memoryDirectoryURL)
+            }
+          }
+          verifiedItems.insert(memoryDirectoryURL.lastPathComponent)
+         }
+        
+        let unverifiedItems = contentItems.subtracting(verifiedItems)
+        for item in unverifiedItems {
+          let url = URL.memoryDirectory.appendingPathComponent(item)
+          if let memory = Memory.init(directoryURL: url) {
+            try? await database().updateOrInsertMemory(memory)
+          } else {
+            syncResult.orphanItems.insert(url)
+          }
+        }
+        return syncResult
       }
     )
   }()
 }
 
 extension Memory {
+  static let expectedFiles: Set<String> = []
+  init?(directoryURL: URL) {
+    @Dependency(\.fileClient) var fileClient
+    guard let contents = (try? fileClient.contentsOfDirectory(directoryURL)).map(Set.init),
+            contents.isSuperset(of: Self.expectedFiles) else {
+      return nil
+    }
+    let memoryFileURL = directoryURL.appending(component: "memory.txt")
+    do {
+      let data = try Data(contentsOf: memoryFileURL)
+      let memoryFile = try JSONDecoder().decode(MemoryFile.self, from: data)
+      let created = MemoryFile.dateFormatter.date(from: memoryFile.created) ?? Date()
+      self = .init(
+        id: memoryFile.id,
+        created: created,
+        notes: memoryFile.notes ?? "",
+        items: memoryFile.items?.map({ item in
+          .init(name: item, center: .zero)
+        }) ?? [],
+        tags: memoryFile.tags?.map(MemoryTag.init) ?? [],
+        location: memoryFile.location.flatMap({ location in
+          guard let lat = location["latitude"], let long = location["longitude"] else {
+            return nil
+          }
+          return .init(lat: lat, long: long)
+        })
+      )
+    } catch {
+      reportIssue(error)
+      return nil
+    }
+  }
+  
   init(_ model: MemoryModel) {
     self.init(
       id: model.id,

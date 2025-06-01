@@ -16,7 +16,7 @@ public struct Memory: Sendable, Equatable, Identifiable {
   public init(
     id: String = UUID().uuidString,
     created: Date = Date(),
-    modified: Date = Date(),
+    modified: Date? = nil,
     notes: String = "",
     items: Array<MemoryItem> = [],
     tags: Array<MemoryTag> = [],
@@ -24,7 +24,7 @@ public struct Memory: Sendable, Equatable, Identifiable {
   ) {
     self.id = id
     self.created = created
-    self.modified = modified
+    self.modified = modified ?? created
     self.notes = notes
     self.items = items.identified
     self.tags = tags.identified

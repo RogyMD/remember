@@ -5,13 +5,15 @@ import UIKit
 import IssueReporting
 
 struct MemoryFile: Equatable, Codable {
+  var id: String
   var created: String
   var items: [String]?
   var tags: [String]?
   var location: [String: Double]?
   var notes: String?
   init(memory: Memory) {
-    created = DateFormatter.localizedString(from: memory.created, dateStyle: .medium, timeStyle: .medium)
+    id = memory.id
+    created = Self.dateFormatter.string(from: memory.created)
     items = memory.items.nonEmpty?.map(\.name)
     tags = memory.tags.nonEmpty?.map(\.label)
     notes = memory.notes.nonEmpty
@@ -19,6 +21,12 @@ struct MemoryFile: Equatable, Codable {
       ["latitude": location.lat, "longitude": location.long]
     })
   }
+  static let dateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .medium
+    return formatter
+  }()
   static let encoder: JSONEncoder = {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
