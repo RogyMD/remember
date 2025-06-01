@@ -11,6 +11,8 @@ public struct FileClient: Sendable {
   @DependencyEndpoint
   public var moveItem: @Sendable (URL, URL) throws -> Void
   @DependencyEndpoint
+  public var copyItem: @Sendable (URL, URL) throws -> Void
+  @DependencyEndpoint
   public var removeItem: @Sendable (URL) throws -> Void
   @DependencyEndpoint
   public var itemExists: @Sendable (URL) -> Bool = { _ in false }
@@ -48,6 +50,10 @@ extension FileClient: DependencyKey {
       moveItem: { source, destination in
         try fileManager().createDirectories(to: destination.deletingLastPathComponent())
         try fileManager().moveItem(at: source, to: destination)
+      },
+      copyItem: { source, destination in
+        try fileManager().createDirectories(to: destination.deletingLastPathComponent())
+        try fileManager().copyItem(at: source, to: destination)
       },
       removeItem: {
         try fileManager().removeItem(at: $0)

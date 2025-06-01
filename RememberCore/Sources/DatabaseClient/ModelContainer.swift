@@ -34,6 +34,7 @@ extension ModelContainer {
   nonisolated(unsafe) public static var appModelContainer: ModelContainer = {
     do {
       moveDatabaseFilesIfNeeded()
+      copyReadmeFile()
       Logger.database.info("SwiftData.storeURL: \(URL.storeURL.absoluteString)")
       return try setupModelContainer(url: URL.storeURL, rollback: false)
     } catch {
@@ -75,11 +76,25 @@ extension ModelContainer {
       }
     }
   }
+  
+  static func copyReadmeFile() {
+    @Dependency(\.fileClient) var fileClient
+    if let url = URL.readmeFile,
+       fileClient.itemExists(url),
+       fileClient.itemExists(.documentsDirectory.appending(component: url.lastPathComponent)) == false {
+      do {
+        try fileClient.copyItem(url, .documentsDirectory.appending(component: url.lastPathComponent))
+      } catch {
+        reportIssue(error)
+      }
+    }
+  }
 }
 
 extension URL {
   public static let rememberConfig: URL = URL.memoryDirectory.appending(component: ".remember", directoryHint: .isDirectory)
   public static let databaseDirectory: URL = URL.rememberConfig.appending(component: "db", directoryHint: .isDirectory)
+  public static let readmeFile: URL? = Bundle.module.url(forResource: "README", withExtension: "txt")
   
   public static let deprected_storeURL = URL.documentsDirectory.appending(path: "database.sqlite")
   public static let storeURL = URL.databaseDirectory.appending(path: "database.sqlite")

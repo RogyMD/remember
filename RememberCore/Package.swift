@@ -153,7 +153,8 @@ let package = Package(
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             "RememberCore",
             "FileClient",
-          ]
+          ],
+          resources: [.copy("README.txt")]
         ),
         .target(
           name: "FileClient",
