@@ -35,10 +35,10 @@ extension Memory {
     URL.memoryDirectory.appending(path: memoryDirectoryName, directoryHint: .isDirectory)
   }
   public var originalImageURL: URL {
-    memoryDirectoryURL.appendingPathComponent("original").appendingPathExtension("jpg")
+    memoryDirectoryURL.appendingPathComponent("original").appendingPathExtension("png")
   }
   public var previewImageURL: URL {
-    memoryDirectoryURL.appendingPathComponent("preview").appendingPathExtension("jpg")
+    memoryDirectoryURL.appendingPathComponent("preview").appendingPathExtension("png")
   }
   public var thumbnailImageURL: URL {
     memoryDirectoryURL.appendingPathComponent("thumbnail").appendingPathExtension("png")
