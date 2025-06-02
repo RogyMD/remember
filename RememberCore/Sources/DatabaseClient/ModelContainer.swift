@@ -42,7 +42,7 @@ extension ModelContainer {
       fatalError("container failed to init. Error: \(error)")
 #else
       removeDatabaseFiles()
-      return try! setupModelContainer(url: ModelConfiguration.storeURL, rollback: false)
+      return try! setupModelContainer(url: URL.storeURL, rollback: false)
 #endif
     }
   }()
