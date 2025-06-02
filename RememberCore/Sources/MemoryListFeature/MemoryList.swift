@@ -281,10 +281,8 @@ public struct MemoryListView: View {
           .cornerRadius(.cornerRadius)
         
         VStack(alignment: .leading, spacing: 4) {
-          if memory.items.isEmpty == false {
-            Text(memory.name)
-              .foregroundStyle(.primary)
-          }
+          Text(memory.name)
+            .foregroundStyle(.primary)
           
           if memory.tags.isEmpty == false {
             Text(memory.displayTags)
