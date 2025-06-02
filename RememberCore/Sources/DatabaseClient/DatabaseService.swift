@@ -1,6 +1,8 @@
 import Foundation
 import SwiftData
 import RememberCore
+import FileClient
+import Dependencies
 
 @ModelActor
 actor DatabaseService {
@@ -47,14 +49,15 @@ actor DatabaseService {
     try delete(model)
   }
   
-  func removeAllData() throws {
+  func removeAllData() async throws {
+    @Dependency(\.fileClient) var fileClient
     if #available(watchOS 11, iOS 18, *) {
       try modelContainer.erase()
     } else {
       modelContainer.deleteAllData()
     }
-    ModelContainer.removeDatabaseFiles()
-    ModelContainer.appModelContainer = try setupModelContainer(url: ModelConfiguration.storeURL)
+    try fileClient.removeItem(.memoryDirectory)
+    ModelContainer.appModelContainer = try setupModelContainer(url: .storeURL)
     Self.shared = .init(modelContainer: .appModelContainer)
   }
   

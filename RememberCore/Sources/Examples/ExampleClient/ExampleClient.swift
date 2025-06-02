@@ -4,7 +4,7 @@ import DependenciesMacros
 @DependencyClient
 public struct <#Example#>: Sendable {
   @DependencyEndpoint
-  public var <#api#>: @Sendable (<#params#>) <#async#> <#throws#> -> <#Void#> = { <#_ in#> }
+  public var <#api#>: @Sendable (<#params#>) <#async#> <#throws#> -> <#Void#>
 }
 
 extension DependencyValues {

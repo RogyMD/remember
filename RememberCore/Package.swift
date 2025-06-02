@@ -27,6 +27,7 @@ let package = Package(
         .library(name: "MapsAppURLClient", targets: ["MapsAppURLClient"]),
         .library(name: "RequestStoreReview", targets: ["RequestStoreReview"]),
         .library(name: "SharingKeys", targets: ["SharingKeys"]),
+        .library(name: "FileClient", targets: ["FileClient"]),
     ],
     dependencies: [
       .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
@@ -151,6 +152,14 @@ let package = Package(
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             "RememberCore",
+            "FileClient",
+          ],
+          resources: [.copy("README.txt")]
+        ),
+        .target(
+          name: "FileClient",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
           ]
         ),
 //    .target(

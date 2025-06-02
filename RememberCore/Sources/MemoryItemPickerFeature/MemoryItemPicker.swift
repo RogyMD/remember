@@ -146,6 +146,7 @@ public struct MemoryItemPickerView: View {
   public var body: some View {
     ZStack {
       ZoomableImage(image: store.image, contentMode: .fill, magnification: $magnification)
+        .background(Color(uiColor: .systemBackground))
         .ignoresSafeArea()
       
       if store.showsItems && isDragging == false {

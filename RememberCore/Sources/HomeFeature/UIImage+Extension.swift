@@ -7,7 +7,9 @@ extension UIImage {
     
     // Use the screen's portrait ratio
     let screenSize = await MainActor.run {
-      UIScreen.main.bounds.size
+      let scale = UIScreen.main.scale
+      let size = UIScreen.main.bounds.size
+      return CGSize(width: size.width * scale, height: size.height * scale)
     }
     let screenRatio = screenSize.width / screenSize.height
     
@@ -33,7 +35,22 @@ extension UIImage {
     let cropRect = CGRect(x: originX, y: originY, width: cropWidth, height: cropHeight)
     
     guard let cgImage = image.cgImage?.cropping(to: cropRect) else { return nil }
-    return UIImage(cgImage: cgImage, scale: image.scale, orientation: .up)
+    let resultImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: .up)
+    guard resultImage.size.height > screenSize.height else { return resultImage }
+    // Resize cropped image to match screen height
+    let targetHeight = screenSize.height
+    let aspectRatio = resultImage.size.width / resultImage.size.height
+    let targetWidth = targetHeight * aspectRatio
+    let targetSize = CGSize(width: targetWidth, height: targetHeight)
+
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = resultImage.scale
+    let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+
+    let resizedImage = renderer.image { _ in
+      resultImage.draw(in: CGRect(origin: .zero, size: targetSize))
+    }
+    return resizedImage
   }
   
   private func fixedOrientation() -> UIImage {
