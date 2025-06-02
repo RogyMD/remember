@@ -40,8 +40,8 @@ extension FileClient {
     let memoryFile = MemoryFile(memory: memory)
     let data = try MemoryFile.encoder.encode(memoryFile)
     createFile(data, memory.textFileURL, true)
-    createFile(image.pngData(), memory.originalImageURL, true)
-    createFile(previewImage.pngData(), memory.previewImageURL, true)
+    createFile(image.jpegData(compressionQuality: 0.8), memory.originalImageURL, true)
+    createFile(previewImage.jpegData(compressionQuality: 0.8), memory.previewImageURL, true)
     if let thumbnailImage = await previewImage.thumbnailImage() {
       createFile(thumbnailImage.pngData(), memory.thumbnailImageURL, true)
       return true

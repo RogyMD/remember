@@ -82,7 +82,7 @@ public struct Home {
         state.memoryForm = nil
         return .run { [database] send in
           guard let memory else { return }
-          if memory.items.count > .zero && memory.location != nil && memory.notes.isEmpty == false {
+          if memory.tags.isEmpty == false || memory.location != nil || memory.notes.isEmpty == false {
             await send(.requestStoreReview)
           }
           try await database.updateMemory(memory)
@@ -125,9 +125,6 @@ public struct Home {
           )
           await send(.createMemory(memory, croppedImage))
           try await database.saveMemory(memory, image.image, croppedImage)
-          if image.caption?.isEmpty == false || image.location != nil {
-            await send(.requestStoreReview)
-          }
         }
       case .searchMemory(.presented(.resultMemoryTapped)):
         return .send(.requestStoreReview)
