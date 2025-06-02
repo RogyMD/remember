@@ -166,7 +166,12 @@ extension DatabaseClient: DependencyKey {
 }
 
 extension Memory {
-  static let expectedFiles: Set<String> = []
+  static let expectedFiles: Set<String> = [
+    "original.png",
+    "preview.png",
+    "thumbnail.png",
+    "memory.txt",
+  ]
   init?(directoryURL: URL) {
     @Dependency(\.fileClient) var fileClient
     guard let contents = (try? fileClient.contentsOfDirectory(directoryURL)).map(Set.init),
