@@ -37,6 +37,8 @@ public struct RememberCamera {
     case binding(BindingAction<State>)
     case capturedImage(CapturedImage)
     case importImage(Data)
+    case pickedFile(URL)
+    case settingsButtonTapped
   }
   
   @Dependency(\.date.now) var now
@@ -67,6 +69,18 @@ public struct RememberCamera {
             )
           )
         }
+      case .pickedFile(let url):
+        return .run { send in
+          guard url.startAccessingSecurityScopedResource() else {
+            reportIssue("Can't access file at: \(url)")
+            return
+          }
+          defer {
+            url.stopAccessingSecurityScopedResource()
+          }
+          let data = try Data(contentsOf: url)
+          await send(.importImage(data))
+        }
       case .binding(\.pickedItem):
         guard let item = state.pickedItem else { return .none }
         state.pickedItem = nil
@@ -75,7 +89,7 @@ public struct RememberCamera {
             await send(.importImage(data))
           }
         }
-      case .binding, .capturedImage:
+      case .binding, .capturedImage, .settingsButtonTapped:
         return .none
       }
     }
@@ -91,6 +105,7 @@ public struct RememberCameraView: View {
   @Namespace var list
   
   @State private var isPhotosPresented: Bool = false
+  @State private var isFilesPresented: Bool = false
   
   public init(store: StoreOf<RememberCamera>) {
     self.store = store
@@ -116,19 +131,32 @@ public struct RememberCameraView: View {
     .ignoresSafeArea()
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
-        Button {
-          isPhotosPresented = true
+        Menu {
+          Button {
+            isPhotosPresented = true
+            } label: {
+              Label("Photos", systemImage: "photo.on.rectangle.angled")
+            }
+            Button {
+              isFilesPresented = true
+            } label: {
+              Label("Files", systemImage: "folder")
+            }
+            Button {
+              store.send(.settingsButtonTapped)
+            } label: {
+              Label("Settings", systemImage: "gear")
+            }
         } label: {
-          Image(systemName: "photo.on.rectangle.angled")
+          Image(systemName: "ellipsis")
             .resizable()
             .aspectRatio(contentMode: .fit)
             .padding(10)
+            .frame(width: 44, height: 44, alignment: .center)
             .background(.thinMaterial)
             .clipShape(Circle())
-            .frame(width: 44, height: 44, alignment: .center)
         }
         .foregroundStyle(.primary)
-        .accessibilityLabel("Photos Library")
       }
     }
     .photosPicker(
@@ -136,6 +164,13 @@ public struct RememberCameraView: View {
       selection: $store.pickedItem,
       matching: .images
     )
+    .fileImporter(isPresented: $isFilesPresented, allowedContentTypes: [.image]) { result in
+      do {
+        store.send(.pickedFile(try result.get()))
+      } catch {
+        reportIssue(error)
+      }
+    }
   }
 }
 
