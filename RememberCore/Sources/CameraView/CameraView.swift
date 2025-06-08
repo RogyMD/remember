@@ -27,16 +27,22 @@ extension DispatchQueue {
 }
 
 final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegate, UIGestureRecognizerDelegate {
+  private let zoomLabelContainer: UIView = {
+      let view = UIView()
+      view.translatesAutoresizingMaskIntoConstraints = false
+      view.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.6)
+      view.layer.cornerRadius = 16
+      view.clipsToBounds = true
+      return view
+  }()
   private let zoomLabel: UILabel = {
-    let label = UILabel()
-    label.translatesAutoresizingMaskIntoConstraints = false
-    label.textAlignment = .center
-    label.textColor = .label
-    label.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.6)
-    label.font = UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .medium)
-    label.layer.cornerRadius = 8
-    label.clipsToBounds = true
-    return label
+      let label = UILabel()
+      label.translatesAutoresizingMaskIntoConstraints = false
+      label.textAlignment = .center
+      label.textColor = .label
+      label.font = UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .medium)
+      label.backgroundColor = .clear
+      return label
   }()
   var session = AVCaptureSession()
   private var sessionDevice: AVCaptureDevice? {
@@ -342,6 +348,8 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
   
   private func setupCameraControls() {
     view.addSubview(captureButton)
+    zoomLabelContainer.addSubview(zoomLabel)
+    view.addSubview(zoomLabelContainer)
     
     NSLayoutConstraint.activate([
         captureButton.widthAnchor.constraint(equalToConstant: 80),
@@ -350,12 +358,21 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
         captureButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
         captureButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10),
     ])
-
-    // Add zoomLabel above captureButton
-    view.addSubview(zoomLabel)
+    
     NSLayoutConstraint.activate([
-      zoomLabel.centerXAnchor.constraint(equalTo: captureButton.centerXAnchor),
-      zoomLabel.bottomAnchor.constraint(equalTo: captureButton.topAnchor, constant: -12),
+        zoomLabelContainer.centerXAnchor.constraint(equalTo: captureButton.centerXAnchor),
+        zoomLabelContainer.bottomAnchor.constraint(equalTo: captureButton.topAnchor, constant: -12),
+
+        zoomLabel.leadingAnchor.constraint(equalTo: zoomLabelContainer.leadingAnchor, constant: 12),
+        zoomLabel.trailingAnchor.constraint(equalTo: zoomLabelContainer.trailingAnchor, constant: -12),
+        zoomLabel.topAnchor.constraint(equalTo: zoomLabelContainer.topAnchor, constant: 6),
+        zoomLabel.bottomAnchor.constraint(equalTo: zoomLabelContainer.bottomAnchor, constant: -6)
+    ])
+
+    
+    NSLayoutConstraint.activate([
+      zoomLabelContainer.centerXAnchor.constraint(equalTo: captureButton.centerXAnchor),
+      zoomLabelContainer.bottomAnchor.constraint(equalTo: captureButton.topAnchor, constant: -12),
     ])
     
     guard sessionDevice?.hasTorch == true else { return }
@@ -382,13 +399,13 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     let textColor = isNotScaled ? UIColor.label : .systemYellow
     let isWholeNumber = (hasHundredths == false && scale.truncatingRemainder(dividingBy: 1) == .zero)
     let text = isWholeNumber ? "\(Int(scale))x" : String(format: "%.2fx", scale)
-    self.zoomLabel.text = " \(text)  "
+    self.zoomLabel.text = text
     
     UIView.animate(withDuration: 0.5, delay: .zero, options: [.beginFromCurrentState]) {
-      self.zoomLabel.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.8)
+      self.zoomLabelContainer.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.8)
+      self.zoomLabelContainer.transform = .init(scaleX: 1.2, y: 1.2)
+      self.zoomLabelContainer.alpha = 1
       self.zoomLabel.textColor = textColor
-      self.zoomLabel.transform = .init(scaleX: 1.2, y: 1.2)
-      self.zoomLabel.alpha = 1
     } completion: { _ in
       self.scheduleUnhighlightOrHideZoomLabel(scale: scale)
     }
@@ -402,9 +419,9 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       guard let self else { return }
       DispatchQueue.main.async {
         UIView.animate(withDuration: 0.5, delay: .zero, options: [.beginFromCurrentState]) {
-          self.zoomLabel.alpha = isNotScaled ? .zero : 1
-          self.zoomLabel.transform = .identity
-          self.zoomLabel.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.5)
+          self.zoomLabelContainer.alpha = isNotScaled ? .zero : 1
+          self.zoomLabelContainer.transform = .identity
+          self.zoomLabelContainer.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.5)
           self.zoomLabel.textColor = .label
         }
       }
