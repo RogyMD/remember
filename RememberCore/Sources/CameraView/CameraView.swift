@@ -33,6 +33,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       view.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.6)
       view.layer.cornerRadius = 16
       view.clipsToBounds = true
+    view.alpha = 0
       return view
   }()
   private let zoomLabel: UILabel = {
@@ -362,6 +363,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     NSLayoutConstraint.activate([
         zoomLabelContainer.centerXAnchor.constraint(equalTo: captureButton.centerXAnchor),
         zoomLabelContainer.bottomAnchor.constraint(equalTo: captureButton.topAnchor, constant: -12),
+        zoomLabelContainer.heightAnchor.constraint(equalToConstant: 32),
 
         zoomLabel.leadingAnchor.constraint(equalTo: zoomLabelContainer.leadingAnchor, constant: 12),
         zoomLabel.trailingAnchor.constraint(equalTo: zoomLabelContainer.trailingAnchor, constant: -12),
