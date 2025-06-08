@@ -8,6 +8,7 @@ import RequestStoreReview
 import SharingKeys
 import SearchMemoryFeature
 import SwiftUI
+import SettingsFormFeature
 
 @Reducer
 public struct Home {
@@ -15,6 +16,7 @@ public struct Home {
   public struct State: Equatable {
     var memoryForm: MemoryForm.State?
     @Presents public var searchMemory: SearchMemory.State?
+    @Presents public var settingsForm: SettingsForm.State?
     var memoryList: MemoryList.State?
     var camera: RememberCamera.State = .init()
     
@@ -31,6 +33,7 @@ public struct Home {
     case memoryList(MemoryList.Action)
     case camera(RememberCamera.Action)
     case searchMemory(PresentationAction<SearchMemory.Action>)
+    case settingsForm(PresentationAction<SettingsForm.Action>)
     case createMemory(Memory, UIImage)
     case listButtonTapped
     case swipeDown
@@ -54,10 +57,10 @@ public struct Home {
       switch action {
       case .onOpenURL(let url):
         return .run { send in
-          defer { url.stopAccessingSecurityScopedResource() }
           guard url.startAccessingSecurityScopedResource() else {
             return reportIssue("Can't access file on url: \(url)")
           }
+          defer { url.stopAccessingSecurityScopedResource() }
           do {
             let data = try Data(contentsOf: url)
             await send(.camera(.importImage(data)))
@@ -128,10 +131,14 @@ public struct Home {
         }
       case .searchMemory(.presented(.resultMemoryTapped)):
         return .send(.requestStoreReview)
+      case .camera(.settingsButtonTapped):
+        state.settingsForm = .init()
+        return .none
       case .memoryForm,
           .memoryList,
           .searchMemory,
-          .camera:
+          .camera,
+          .settingsForm:
         return .none
       }
     }
@@ -140,6 +147,9 @@ public struct Home {
     }
     .ifLet(\.$searchMemory, action: \.searchMemory) {
       SearchMemory()
+    }
+    .ifLet(\.$settingsForm, action: \.settingsForm) {
+      SettingsForm()
     }
     .ifLet(\.memoryList, action: \.memoryList) {
       MemoryList()
@@ -247,6 +257,12 @@ public struct HomeView: View {
             EmptyView()
           }
         }
+        .presentationBackground(.thinMaterial)
+      }
+    }
+    .sheet(store: store.scope(state: \.$settingsForm, action: \.settingsForm)) { store in
+      NavigationStack {
+        SettingsFormView(store: store)
         .presentationBackground(.thinMaterial)
       }
     }

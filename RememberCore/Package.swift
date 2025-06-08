@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "RememberCameraFeature", targets: ["RememberCameraFeature"]),
         .library(name: "SearchMemoryFeature", targets: ["SearchMemoryFeature"]),
         .library(name: "HomeFeature", targets: ["HomeFeature"]),
+        .library(name: "SettingsFormFeature", targets: ["SettingsFormFeature"]),
 //        .library(name: "Localized", targets: ["Localized"]),
         
         // Clients
@@ -110,6 +111,13 @@ let package = Package(
           ]
         ),
         .target(
+          name: "SettingsFormFeature",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            "RememberCore",
+          ]
+        ),
+        .target(
           name: "HomeFeature",
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
@@ -120,6 +128,7 @@ let package = Package(
             "SearchMemoryFeature",
             "RequestStoreReview",
             "SharingKeys",
+            "SettingsFormFeature",
           ]
         ),
         // MARK: Clients
