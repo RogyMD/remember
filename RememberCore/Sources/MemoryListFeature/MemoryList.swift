@@ -107,7 +107,9 @@ public struct MemoryList {
           )
           return .none
         case let .deleteRows(date, indices):
-          guard let id = indices.first.flatMap({ index in state.dataSource[date]?.remove(at: index) }) else { return .none }
+          guard let index = indices.first,
+                  let list = state.dataSource[date], list.indices.contains(index),
+                  let id = indices.first.flatMap({ index in state.dataSource[date]?.remove(at: index) }) else { return .none }
           state.memories.remove(id: id)
           return .run { [database] _ in
             do {

@@ -24,11 +24,11 @@ public struct SettingsForm {
   public func reduce(into state: inout State, action: Action) -> Effect<Action> {
     switch action {
     case .writeReviewRowTapped:
-      return .run { [openURL] _ in await openURL(AppConfig.writeReviewURL) }
+      return .none
     case .learnMoreRowTapped:
-      return .run { [openURL] _ in await openURL(AppConfig.homeURL) }
+      return .none
     case .appSettingsTapped:
-      return .run { [openURL] _ in await openURL(URL(string: UIApplication.openSettingsURLString)!) }
+      return .none
     case .closeButtonTapped:
       return .run { [dismiss] _ in await dismiss() }
     }
@@ -47,16 +47,13 @@ public struct SettingsFormView: View {
   
   public var body: some View {
     Form {
-      Button {
-        store.send(.appSettingsTapped)
-      } label: {
+      Link(destination: URL(string: UIApplication.openSettingsURLString)!) {
         Label("Open Remember Settings", systemImage: "gear")
       }
+      .listRowBackground(Color.clear.background(.thinMaterial))
       
       Section("🫶 Thank You for Helping Remember") {
-        Button {
-          store.send(.writeReviewRowTapped)
-        } label: {
+        Link(destination: AppConfig.writeReviewURL) {
           Label("Write a Review", systemImage: "star.fill")
             .foregroundStyle(Color(uiColor: .systemYellow))
         }
@@ -70,15 +67,14 @@ public struct SettingsFormView: View {
             .symbolRenderingMode(.multicolor)
         }
         
-        
-        Button {
-          store.send(.learnMoreRowTapped)
-        } label: {
+        Link(destination: AppConfig.homeURL) {
           Label("Learn more", systemImage: "graduationcap.fill")
             .foregroundStyle(Color(uiColor: .systemGreen))
         }
       }
+      .listRowBackground(Color.clear.background(.thinMaterial))
     }
+    .scrollContentBackground(.hidden)
     .navigationTitle("Settings")
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
