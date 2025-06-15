@@ -212,7 +212,9 @@ extension Memory {
       items: model.items
         .map(MemoryItem.init)
         .sorted(by: { $0.name < $1.name }),
-      tags: model.tags.map(MemoryTag.init),
+      tags: model.tags
+        .map(MemoryTag.init)
+        .sorted(by: { $0.label < $1.label }),
       location: model.location.map(MemoryLocation.init)
     )
   }
