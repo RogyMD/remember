@@ -62,7 +62,6 @@ public struct MemoryList {
     case memoryForm(PresentationAction<MemoryForm.Action>)
     case memoryTapped(Memory.ID)
     case closeButtonTapped
-    case settingsButtonTapped
     case deleteRows(Date, IndexSet)
     case addMemory(Memory)
     case loadDataIfNeeded
@@ -127,8 +126,7 @@ public struct MemoryList {
         case .memoryForm(.presented(let action)):
           return memoryFormAction(action, state: &state)
         case .memoryForm,
-            .closeButtonTapped,
-            .settingsButtonTapped:
+            .closeButtonTapped:
           return .none
         }
       }
@@ -238,19 +236,9 @@ public struct MemoryListView: View {
           .progressViewStyle(.circular)
           .listRowBackground(Color.clear)
       }
-      
-//      Button {
-//        store.send(.settingsButtonTapped)
-//      } label: {
-//        HStack {
-//          Image(systemName: "gear")
-//          Text("Settings")
-//        }
-//      }
-//        .listRowBackground(Color.clear)
     }
     .listStyle(.plain)
-    .navigationTitle(Text("Memories"))
+    .navigationTitle("Memories")
     .toolbar(content: {
       ToolbarItem(placement: .topBarTrailing) {
         EditButton()
@@ -325,6 +313,9 @@ public struct MemoryListView: View {
             .foregroundStyle(.tertiary)
           }
         }
+      }
+      .when(memory.isPrivate) {
+        $0.redacted(reason: .placeholder)
       }
     }
     .listRowBackground(Color.clear)

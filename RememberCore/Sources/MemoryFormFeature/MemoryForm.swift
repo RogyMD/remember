@@ -230,6 +230,11 @@ public struct MemoryFormView: View {
               .lineLimit(0)
               .foregroundStyle(Color.label)
           }
+          
+          Toggle(isOn: $store.memory.isPrivate) {
+            Label("Private Memory", systemImage: store.memory.isPrivate ? "lock.fill" : "lock.open.fill")
+              .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
+          }
         }
         
         Section("Tags") {

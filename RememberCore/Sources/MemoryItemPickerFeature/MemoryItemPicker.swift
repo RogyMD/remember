@@ -151,25 +151,7 @@ public struct MemoryItemPickerView: View {
       
       if store.showsItems && isDragging == false {
         ForEach(store.items) { item in
-          TextField(
-            "",
-            text: .init(
-              get: { item.name },
-              set: { store.send(.textFieldChanged(item.id, $0)) }
-            ),
-            prompt: Text("Enter a label")
-          )
-          .font(Font.item)
-          .multilineTextAlignment(.center)
-          .submitLabel(.done)
-          .fixedSize()
-          .padding(Double.padding)
-          .background(.regularMaterial, in: Capsule())
-          .position(position(for: item))
-          .zIndex(1)
-          .focused($focusedItem, equals: item.id)
-          .animation(.linear(duration: 0.4), value: store.showsItems)
-          .transition(.opacity) // TODO: combine with animation using .scale(anchor:
+          itemCell(for: item)
         }
       }
     }
@@ -239,6 +221,28 @@ public struct MemoryItemPickerView: View {
   
   var isZooming: Bool {
     magnification != nil
+  }
+  
+  func itemCell(for item: MemoryItem) -> some View {
+    TextField(
+      "",
+      text: .init(
+        get: { item.name },
+        set: { store.send(.textFieldChanged(item.id, $0)) }
+      ),
+      prompt: Text("Enter a label")
+    )
+    .font(Font.item)
+    .multilineTextAlignment(.center)
+    .submitLabel(.done)
+    .fixedSize()
+    .padding(Double.padding)
+    .background(.regularMaterial, in: Capsule())
+    .position(position(for: item))
+    .zIndex(1)
+    .focused($focusedItem, equals: item.id)
+    .animation(.linear(duration: 0.4), value: store.showsItems)
+    .transition(.opacity) // TODO: combine with animation using .scale(anchor:
   }
 }
 
