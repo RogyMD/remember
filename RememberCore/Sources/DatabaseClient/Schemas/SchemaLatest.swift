@@ -1,4 +1,4 @@
-public typealias SchemaLatest = SchemaV2
+public typealias SchemaLatest = SchemaV3
 public typealias MemoryModel = SchemaLatest.MemoryModel
 public typealias TagModel = SchemaLatest.TagModel
 public typealias LocationModel = SchemaLatest.LocationModel

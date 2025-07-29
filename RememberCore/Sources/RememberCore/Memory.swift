@@ -6,7 +6,9 @@ public struct Memory: Sendable, Equatable, Identifiable {
   public let created: Date
   public var modified: Date
   public var notes: String
+  public var isPrivate: Bool
   public var items: IdentifiedArrayOf<MemoryItem>
+  public var recognizedItems: IdentifiedArrayOf<MemoryItem>
   public var tags: IdentifiedArrayOf<MemoryTag>
   public var location: MemoryLocation?
   public var isNew: Bool {
@@ -18,7 +20,9 @@ public struct Memory: Sendable, Equatable, Identifiable {
     created: Date = Date(),
     modified: Date? = nil,
     notes: String = "",
+    isPrivate: Bool = false,
     items: Array<MemoryItem> = [],
+    recognizedItems: Array<MemoryItem> = [],
     tags: Array<MemoryTag> = [],
     location: MemoryLocation? = nil
   ) {
@@ -26,7 +30,9 @@ public struct Memory: Sendable, Equatable, Identifiable {
     self.created = created
     self.modified = modified ?? created
     self.notes = notes
+    self.isPrivate = isPrivate
     self.items = items.identified
+    self.recognizedItems = recognizedItems.identified
     self.tags = tags.identified
     self.location = location
   }

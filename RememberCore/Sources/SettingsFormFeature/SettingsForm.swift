@@ -52,10 +52,15 @@ public struct SettingsFormView: View {
       }
       .listRowBackground(Color.clear.background(.thinMaterial))
       
-      Section("🫶 Thank You for Helping Remember") {
+      Section("🫶 Thank You for Using Remember") {
+        Link(destination: AppConfig.helpURL) {
+          Label("Get Started", systemImage: "graduationcap.fill")
+            .foregroundStyle(Color(uiColor: .systemGreen))
+        }
+        
         Link(destination: AppConfig.writeReviewURL) {
           Label("Write a Review", systemImage: "star.fill")
-            .foregroundStyle(Color(uiColor: .systemYellow))
+            .foregroundStyle(Color(uiColor: .systemTeal))
         }
         
         ShareLink(
@@ -68,8 +73,8 @@ public struct SettingsFormView: View {
         }
         
         Link(destination: AppConfig.homeURL) {
-          Label("Learn more", systemImage: "graduationcap.fill")
-            .foregroundStyle(Color(uiColor: .systemGreen))
+          Label("About", systemImage: "info.circle.fill")
+            .foregroundStyle(Color(uiColor: .label))
         }
       }
       .listRowBackground(Color.clear.background(.thinMaterial))

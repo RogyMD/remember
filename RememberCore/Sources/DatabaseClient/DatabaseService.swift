@@ -92,7 +92,9 @@ extension MemoryModel {
       created: memory.created,
       modified: memory.modified,
       notes: memory.notes,
+      isPrivate: memory.isPrivate,
       items: memory.items.map(ItemModel.init),
+      recognizedItems: memory.recognizedItems.map(ItemModel.init),
       tags: memory.tags.map(TagModel.init),
       location: memory.location.map(LocationModel.init)
     )
@@ -101,8 +103,10 @@ extension MemoryModel {
   func update(_ memory: Memory) {
     guard id == memory.id, modified != memory.modified else { return }
     modified = memory.modified
+    isPrivate = memory.isPrivate
     notes = memory.notes
     let newItems = memory.items.map(ItemModel.init)
+    let newRecognizedItems = memory.recognizedItems.map(ItemModel.init)
     let newTags = memory.tags.map(TagModel.init)
     let newLocation = memory.location.map(LocationModel.init)
     if location != newLocation {
@@ -118,6 +122,17 @@ extension MemoryModel {
         }
       }
       items.replaceSubrange(0..<items.count, with: updatedItems)
+    }
+    if newRecognizedItems != recognizedItems {
+      let updatedRecognizedItems = newRecognizedItems.map { item in
+        if let existing = recognizedItems.first(where: { $0.id == item.id }), let memoryItem = memory.recognizedItems[id: item.id] {
+          existing.update(memoryItem)
+          return existing
+        } else {
+          return item
+        }
+      }
+      recognizedItems.replaceSubrange(0..<recognizedItems.count, with: updatedRecognizedItems)
     }
     if newTags != tags {
       tags.replaceSubrange(0..<tags.count, with: newTags)
