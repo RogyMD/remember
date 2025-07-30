@@ -94,9 +94,9 @@ extension MemoryModel {
       notes: memory.notes,
       isPrivate: memory.isPrivate,
       items: memory.items.map(ItemModel.init),
-      recognizedItems: memory.recognizedItems.map(ItemModel.init),
       tags: memory.tags.map(TagModel.init),
-      location: memory.location.map(LocationModel.init)
+      location: memory.location.map(LocationModel.init),
+      recognizedText: memory.recognizedText.map(RecognizedTextModel.init)
     )
   }
   
@@ -106,11 +106,14 @@ extension MemoryModel {
     isPrivate = memory.isPrivate
     notes = memory.notes
     let newItems = memory.items.map(ItemModel.init)
-    let newRecognizedItems = memory.recognizedItems.map(ItemModel.init)
+    let newRecognizedText = memory.recognizedText.map(RecognizedTextModel.init)
     let newTags = memory.tags.map(TagModel.init)
     let newLocation = memory.location.map(LocationModel.init)
     if location != newLocation {
       location = newLocation
+    }
+    if recognizedText != newRecognizedText {
+      recognizedText = newRecognizedText
     }
     if newItems != items {
       let updatedItems = newItems.map { item in
@@ -122,17 +125,6 @@ extension MemoryModel {
         }
       }
       items.replaceSubrange(0..<items.count, with: updatedItems)
-    }
-    if newRecognizedItems != recognizedItems {
-      let updatedRecognizedItems = newRecognizedItems.map { item in
-        if let existing = recognizedItems.first(where: { $0.id == item.id }), let memoryItem = memory.recognizedItems[id: item.id] {
-          existing.update(memoryItem)
-          return existing
-        } else {
-          return item
-        }
-      }
-      recognizedItems.replaceSubrange(0..<recognizedItems.count, with: updatedRecognizedItems)
     }
     if newTags != tags {
       tags.replaceSubrange(0..<tags.count, with: newTags)
@@ -169,6 +161,23 @@ extension LocationModel {
     self.init(
       latitude: location.lat,
       longitude: location.long
+    )
+  }
+}
+
+extension RecognizedTextModel {
+  convenience init(_ recognizedText: RecognizedText) {
+    self.init(
+      text: recognizedText.text,
+      textFrames: recognizedText.textFrames.map(TextFrameModel.init)
+    )
+  }
+}
+
+extension TextFrameModel {
+  convenience init(_ textFrame: TextFrame) {
+    self.init(
+      text: textFrame.text, frame: textFrame.frame
     )
   }
 }

@@ -9,9 +9,29 @@ public enum SchemaV3: VersionedSchema {
       TagModel.self,
       LocationModel.self,
       ItemModel.self,
+      TextFrameModel.self,
+      RecognizedTextModel.self,
     ]
   }
-  
+  @Model
+  public final class TextFrameModel {
+    public var text: String
+    public var frame: CGRect
+    init(text: String, frame: CGRect) {
+      self.text = text
+      self.frame = frame
+    }
+  }
+  @Model
+  public final class RecognizedTextModel {
+    public var text: String
+    @Relationship(deleteRule: .cascade)
+    public var textFrames: [TextFrameModel]
+    init(text: String, textFrames: [TextFrameModel]) {
+      self.text = text
+      self.textFrames = textFrames
+    }
+  }
   @Model
   public final class MemoryModel {
     @Attribute(.unique) public var id: String
@@ -21,12 +41,12 @@ public enum SchemaV3: VersionedSchema {
     public var isPrivate: Bool = false
     @Relationship(deleteRule: .cascade)
     public var items: [ItemModel]
-    @Relationship(deleteRule: .cascade)
-    public var recognizedItems: [ItemModel] = []
     @Relationship(inverse: \TagModel.memories)
     public var tags: [TagModel]
     @Relationship(deleteRule: .cascade)
     public var location: LocationModel?
+    @Relationship(deleteRule: .cascade)
+    public var recognizedText: RecognizedTextModel?
     
     init(
       id: String,
@@ -35,18 +55,18 @@ public enum SchemaV3: VersionedSchema {
       notes: String = "",
       isPrivate: Bool,
       items: [ItemModel],
-      recognizedItems: [ItemModel],
       tags: [TagModel],
       location: LocationModel?,
+      recognizedText: RecognizedTextModel?
     ) {
       self.id = id
       self.created = created
       self.modified = modified
       self.notes = notes
       self.items = items
-      self.recognizedItems = recognizedItems
       self.tags = tags
       self.location = location
+      self.recognizedText = recognizedText
     }
   }
   

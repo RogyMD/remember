@@ -153,7 +153,7 @@ extension DatabaseClient: DependencyKey {
         let unverifiedItems = contentItems.subtracting(verifiedItems)
         for item in unverifiedItems {
           let url = URL.memoryDirectory.appendingPathComponent(item)
-          if let memory = Memory.init(directoryURL: url) {
+          if let memory = Memory(directoryURL: url) {
             try? await database().updateOrInsertMemory(memory)
           } else {
             syncResult.orphanItems.insert(url)
@@ -213,14 +213,27 @@ extension Memory {
       items: model.items
         .map(MemoryItem.init)
         .sorted(by: { $0.name < $1.name }),
-      recognizedItems: model.recognizedItems
-        .map(MemoryItem.init)
-        .sorted(by: { $0.name < $1.name }),
       tags: model.tags
         .map(MemoryTag.init)
         .sorted(by: { $0.label < $1.label }),
-      location: model.location.map(MemoryLocation.init)
+      location: model.location.map(MemoryLocation.init),
+      recognizedText: model.recognizedText.map(RecognizedText.init)
     )
+  }
+}
+
+extension RecognizedText {
+  init(_ model: RecognizedTextModel) {
+    self.init(
+      text: model.text,
+      textFrames: model.textFrames.map(TextFrame.init)
+    )
+  }
+}
+
+extension TextFrame {
+  init(_ textFrame: TextFrameModel) {
+    self.init(text: textFrame.text, frame: textFrame.frame)
   }
 }
 
