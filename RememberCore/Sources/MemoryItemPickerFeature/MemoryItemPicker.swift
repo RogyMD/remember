@@ -36,6 +36,7 @@ public struct MemoryItemPicker {
     case binding(_ action: BindingAction<State>)
     case tappedImage(CGPoint)
     case tappedItem(MemoryItem.ID)
+    case deleteItemButtonTapped(MemoryItem.ID)
     case textFieldChanged(MemoryItem.ID, String)
     case doneButtonTapped
     case cancelButtonTapped
@@ -70,7 +71,10 @@ public struct MemoryItemPicker {
           ).size()
           size.width += padding
           size.height += padding
-          let itemFrame = CGRect(center: item.center, size: size)
+          var itemFrame = CGRect(center: item.center, size: size)
+          itemFrame.size.width += 12
+          itemFrame.origin.y -= 12
+          itemFrame.size.height += 12
           return itemFrame.contains(point)
         }
         state.showsItems = true
@@ -81,6 +85,13 @@ public struct MemoryItemPicker {
           state.items.append(item)
           state.focusedMemoryItem = item.id
           return .none
+        }
+      case .deleteItemButtonTapped(let id):
+        var items = state.items
+        items.remove(id: id)
+        return .run { [items] send in
+          await Task.yield()
+          await send(.set(\.items, items), animation: .easeOut)
         }
       case .tappedItem(_):
         return .none
@@ -159,8 +170,12 @@ public struct MemoryItemPickerView: View {
     .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
     .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
     .animation(.easeOut, value: isDismissable)
+//    .gesture(DragGesture(minimumDistance: 0)
+//      .updating($dragValue, body: { value, state, _ in
+//        state = value
+//      }))
     .simultaneousGesture(
-      DragGesture(minimumDistance: 0)
+      DragGesture(minimumDistance: .zero)
         .updating($dragValue, body: { value, state, _ in
           state = value
         })
@@ -207,10 +222,14 @@ public struct MemoryItemPickerView: View {
         .bold()
       }
       ToolbarItem(placement: .bottomBar) {
-        Button {
-          store.send(.labelVisibilityButtonTapped, animation: .linear)
-        } label: {
-          Image(systemName: store.showsItems ? "capsule" : "capsule.fill")
+        HStack {
+          Spacer()
+          
+          Button {
+            store.send(.labelVisibilityButtonTapped, animation: .linear)
+          } label: {
+            Image(systemName: store.showsItems ? "capsule" : "capsule.fill")
+          }
         }
       }
     }
@@ -238,6 +257,20 @@ public struct MemoryItemPickerView: View {
     .fixedSize()
     .padding(Double.padding)
     .background(.regularMaterial, in: Capsule())
+    .overlay(alignment: .topTrailing) {
+      Button {
+        store.send(.deleteItemButtonTapped(item.id))
+      } label: {
+        Image(systemName: "minus.circle.fill")
+          .symbolRenderingMode(.multicolor)
+          .resizable()
+          .scaledToFill()
+      }
+      .frame(width: 24, height: 24)
+      .offset(x: 12, y: -12)
+      .padding(4)
+      .zIndex(1)
+    }
     .position(position(for: item))
     .zIndex(1)
     .focused($focusedItem, equals: item.id)

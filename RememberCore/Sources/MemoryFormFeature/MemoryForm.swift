@@ -183,7 +183,7 @@ public struct MemoryForm: Sendable {
       return .none
     case .zoomedOut:
       return .none
-    case .onAppear:
+    case .onAppear, .deleteItemButtonTapped:
       return .none
     }
   }
@@ -349,14 +349,14 @@ public struct MemoryFormView: View {
   @ToolbarContentBuilder
   var toolbarContent: some ToolbarContent {
     ToolbarItem(placement: .topBarTrailing) {
-      Button("Remember") {
+      Button("Done") {
         store.send(.doneButtonTapped, animation: .linear)
       }
       .bold()
     }
     ToolbarItem(placement: .topBarLeading) {
       if store.isNew {
-        Button("Forget") {
+        Button("Delete") {
           store.send(.forgetButtonTapped, animation: .linear)
         }
         .foregroundStyle(.red)

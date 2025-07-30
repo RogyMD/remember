@@ -46,7 +46,7 @@ public struct SearchMemory {
         case .updateSearchResults(let results):
           state.resultsList = results
             .nonEmpty
-            .map({ MemoryList.State(memories: $0, isDataLoaded: true, allowsDelete: false) })
+            .map({ MemoryList.State(memories: $0, isDataLoaded: true, allowsDelete: false, displayPrivateItemName: true) })
           return .none
         case .binding(\.query):
           state.isLoading = true

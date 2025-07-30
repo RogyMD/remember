@@ -209,7 +209,11 @@ extension Memory {
       id: model.id,
       created: model.created,
       notes: model.notes,
+      isPrivate: model.isPrivate,
       items: model.items
+        .map(MemoryItem.init)
+        .sorted(by: { $0.name < $1.name }),
+      recognizedItems: model.recognizedItems
         .map(MemoryItem.init)
         .sorted(by: { $0.name < $1.name }),
       tags: model.tags

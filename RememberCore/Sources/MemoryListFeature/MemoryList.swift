@@ -15,19 +15,21 @@ extension Date {
 public struct MemoryList {
   @ObservableState
   public struct State: Equatable {
-    public static var empty: State { .init(memories: [], isDataLoaded: nil, allowsDelete: true) }
+    public static var empty: State { .init(memories: [], isDataLoaded: nil, allowsDelete: true, displayPrivateItemName: false) }
     public var memories: IdentifiedArrayOf<Memory>
     @Presents var memoryForm: MemoryForm.State?
     var isDataLoaded: Bool?
     var dataSource: [Date: [Memory.ID]]
     var rememberedDays: [Date]
     var allowsDelete: Bool
+    var displayPrivateItemName: Bool
     
-    public init(memories: [Memory], isDataLoaded: Bool? = nil, allowsDelete: Bool = true) {
+    public init(memories: [Memory], isDataLoaded: Bool? = nil, allowsDelete: Bool = true, displayPrivateItemName: Bool = false) {
       let memories = memories.identified
       self.memories = memories
       self.isDataLoaded = isDataLoaded
       self.allowsDelete = allowsDelete
+      self.displayPrivateItemName = displayPrivateItemName
       let dataSource: [Date: [Memory.ID]] = .init(grouping: memories.ids, by: { memoryID in
         let memory = memories[id: memoryID]!
         return memory.created.startOfDay
@@ -274,6 +276,9 @@ public struct MemoryListView: View {
         VStack(alignment: .leading, spacing: 4) {
           Text(memory.name)
             .foregroundStyle(.primary)
+            .when(store.displayPrivateItemName) {
+              $0.unredacted()
+            }
           
           if memory.tags.isEmpty == false {
             Text(memory.displayTags)
