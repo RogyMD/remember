@@ -161,9 +161,13 @@ public struct MemoryList {
     case .cancelButtonTapped:
       return .send(.memoryForm(.dismiss))
     case .deleteConfirmationAlertButtonTapped:
-      guard let memory = state.memoryForm?.memory, let index = state.memories.index(id: memory.id) else { return .none }
+      guard let memory = state.memoryForm?.memory else { return .none }
+      let section = memory.created.startOfDay
+      guard let index = state.dataSource[section]?.firstIndex(of: memory.id) else {
+        return .none
+      }
       return .run { send in
-        await send(.deleteRows(memory.created.startOfDay, .init(integer: index)))
+        await send(.deleteRows(section, .init(integer: index)))
         await send(.memoryForm(.dismiss))
       }
     case .binding(_):
