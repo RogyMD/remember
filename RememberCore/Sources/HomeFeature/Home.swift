@@ -189,8 +189,6 @@ public struct Home {
   //    }
 }
 
-
-
 extension CapturedImage {
   func previewImageAndPoint() async -> (UIImage, CGPoint) {
     let cropped = await image.croppedToScreen() ?? UIImage()

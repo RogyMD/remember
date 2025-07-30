@@ -4,6 +4,7 @@ enum AppSchemaMigrationPlan: SchemaMigrationPlan {
     [
       SchemaV1.self,
       SchemaV2.self,
+      SchemaV3.self,
     ]
   }
   

@@ -37,7 +37,7 @@ public struct DatabaseClient: Sendable {
 }
 
 extension DatabaseClient {
-  public struct SyncResult {
+  public struct SyncResult: Equatable, Sendable {
     public var invalidMemories: Set<Memory.ID>
     public var orphanItems: Set<URL>
     init(invalidMemories: Set<Memory.ID> = [], orphanItems: Set<URL> = []) {
@@ -137,14 +137,19 @@ extension DatabaseClient: DependencyKey {
           let memoryDirectoryURL = memory.memoryDirectoryURL
           let isValid = (
             fileClient.itemExists(memory.originalImageURL) &&
-            fileClient.itemExists(memory.previewImageURL) &&
-            fileClient.itemExists(memory.thumbnailImageURL) &&
             fileClient.itemExists(memory.textFileURL)
           )
           if isValid == false {
             syncResult.invalidMemories.insert(memory.id)
             if contentItems.contains(memoryDirectoryURL.lastPathComponent) {
               syncResult.orphanItems.insert(memoryDirectoryURL)
+            }
+          } else {
+            if fileClient.itemExists(memory.previewImageURL) == false {
+              guard let image = UIImage(contentsOfFile: memory.originalImageURL.absoluteString), let previewImage = await image.croppedToScreen() else {
+                continue
+              }
+              try await fileClient.saveMemory(memory, image: image, previewImage: previewImage)
             }
           }
           verifiedItems.insert(memoryDirectoryURL.lastPathComponent)
