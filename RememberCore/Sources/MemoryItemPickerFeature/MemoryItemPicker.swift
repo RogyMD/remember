@@ -75,7 +75,7 @@ public struct MemoryItemPicker {
       case .recognizeTextButtonTapped:
         if state.showsRecognizedText {
           state.showsRecognizedText = false
-          state.recognizedText = nil
+          state.displayTextFrames = nil
           return .none
         } else {
           state.showsRecognizedText = true

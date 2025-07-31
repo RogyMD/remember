@@ -321,6 +321,18 @@ public struct MemoryListView: View {
             .bold()
             .foregroundStyle(.tertiary)
           }
+          if let text = memory.recognizedText?.text {
+            HStack {
+              Image(systemName: "text.viewfinder")
+              
+              Text(text)
+                .lineLimit(1)
+            }
+            .font(.caption2)
+            .italic()
+            .bold()
+            .foregroundStyle(.tertiary)
+          }
         }
       }
       .when(memory.isPrivate) {

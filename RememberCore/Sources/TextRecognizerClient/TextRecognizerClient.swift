@@ -71,7 +71,7 @@ extension TextRecognizerClient: DependencyKey {
 
       tagger.enumerateTags(in: fullText.startIndex..<fullText.endIndex, unit: .word, scheme: .lexicalClass) { tag, tokenRange in
         let word = String(fullText[tokenRange])
-        guard word.count > 2 else { return true }
+        guard word.isCJKOrKorean || word.count > 2 else { return true }
         let boundingBox = (try? topCandidate.boundingBox(for: tokenRange))?.boundingBox ?? observation.boundingBox
         let rect = VNImageRectForNormalizedRect(boundingBox, cgImage.width, cgImage.height)
         let convertedRect = CGRect(
@@ -92,4 +92,20 @@ extension TextRecognizerClient: DependencyKey {
 
     return .init(text: allText.trimmingCharacters(in: .whitespacesAndNewlines), textFrames: frames)
   })
+}
+
+extension String {
+  var isCJKOrKorean: Bool {
+      guard let scalar = unicodeScalars.first else { return false }
+      switch scalar.value {
+      case 0x4E00...0x9FFF,       // CJK Unified (Chinese, Kanji)
+           0x3040...0x309F,       // Hiragana
+           0x30A0...0x30FF,       // Katakana
+           0xAC00...0xD7AF,       // Hangul Syllables
+           0x1100...0x11FF:       // Hangul Jamo (rare)
+          return true
+      default:
+          return false
+      }
+  }
 }
