@@ -1,7 +1,7 @@
 import UIKit
 
 extension UIImage {
-  func croppedToScreen() async -> UIImage? {
+  public func croppedToScreen() async -> UIImage? {
     // Normalize the image to portrait orientation
     let image = self.fixedOrientation()
     

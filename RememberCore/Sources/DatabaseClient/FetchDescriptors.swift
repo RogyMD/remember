@@ -43,7 +43,8 @@ extension FetchDescriptor where T == MemoryModel {
         memory.items.contains(where: { item in
           item.name.localizedStandardContains(word)
         }) ||
-        memory.notes.localizedStandardContains(word)
+        memory.notes.localizedStandardContains(word) ||
+        memory.recognizedText?.text.localizedStandardContains(word) ?? false
       }
     }
     // searching if the query is included in any of the properties

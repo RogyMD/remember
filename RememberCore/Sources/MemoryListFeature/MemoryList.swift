@@ -15,19 +15,21 @@ extension Date {
 public struct MemoryList {
   @ObservableState
   public struct State: Equatable {
-    public static var empty: State { .init(memories: [], isDataLoaded: nil, allowsDelete: true) }
+    public static var empty: State { .init(memories: [], isDataLoaded: nil, allowsDelete: true, displayPrivateItemName: false) }
     public var memories: IdentifiedArrayOf<Memory>
     @Presents var memoryForm: MemoryForm.State?
     var isDataLoaded: Bool?
     var dataSource: [Date: [Memory.ID]]
     var rememberedDays: [Date]
     var allowsDelete: Bool
+    var displayPrivateItemName: Bool
     
-    public init(memories: [Memory], isDataLoaded: Bool? = nil, allowsDelete: Bool = true) {
+    public init(memories: [Memory], isDataLoaded: Bool? = nil, allowsDelete: Bool = true, displayPrivateItemName: Bool = false) {
       let memories = memories.identified
       self.memories = memories
       self.isDataLoaded = isDataLoaded
       self.allowsDelete = allowsDelete
+      self.displayPrivateItemName = displayPrivateItemName
       let dataSource: [Date: [Memory.ID]] = .init(grouping: memories.ids, by: { memoryID in
         let memory = memories[id: memoryID]!
         return memory.created.startOfDay
@@ -62,7 +64,6 @@ public struct MemoryList {
     case memoryForm(PresentationAction<MemoryForm.Action>)
     case memoryTapped(Memory.ID)
     case closeButtonTapped
-    case settingsButtonTapped
     case deleteRows(Date, IndexSet)
     case addMemory(Memory)
     case loadDataIfNeeded
@@ -127,8 +128,7 @@ public struct MemoryList {
         case .memoryForm(.presented(let action)):
           return memoryFormAction(action, state: &state)
         case .memoryForm,
-            .closeButtonTapped,
-            .settingsButtonTapped:
+            .closeButtonTapped:
           return .none
         }
       }
@@ -161,9 +161,13 @@ public struct MemoryList {
     case .cancelButtonTapped:
       return .send(.memoryForm(.dismiss))
     case .deleteConfirmationAlertButtonTapped:
-      guard let memory = state.memoryForm?.memory, let index = state.memories.index(id: memory.id) else { return .none }
+      guard let memory = state.memoryForm?.memory else { return .none }
+      let section = memory.created.startOfDay
+      guard let index = state.dataSource[section]?.firstIndex(of: memory.id) else {
+        return .none
+      }
       return .run { send in
-        await send(.deleteRows(memory.created.startOfDay, .init(integer: index)))
+        await send(.deleteRows(section, .init(integer: index)))
         await send(.memoryForm(.dismiss))
       }
     case .binding(_):
@@ -238,19 +242,9 @@ public struct MemoryListView: View {
           .progressViewStyle(.circular)
           .listRowBackground(Color.clear)
       }
-      
-//      Button {
-//        store.send(.settingsButtonTapped)
-//      } label: {
-//        HStack {
-//          Image(systemName: "gear")
-//          Text("Settings")
-//        }
-//      }
-//        .listRowBackground(Color.clear)
     }
     .listStyle(.plain)
-    .navigationTitle(Text("Memories"))
+    .navigationTitle("Memories")
     .toolbar(content: {
       ToolbarItem(placement: .topBarTrailing) {
         EditButton()
@@ -286,6 +280,9 @@ public struct MemoryListView: View {
         VStack(alignment: .leading, spacing: 4) {
           Text(memory.name)
             .foregroundStyle(.primary)
+            .when(store.displayPrivateItemName) {
+              $0.unredacted()
+            }
           
           if memory.tags.isEmpty == false {
             Text(memory.displayTags)
@@ -324,7 +321,22 @@ public struct MemoryListView: View {
             .bold()
             .foregroundStyle(.tertiary)
           }
+          if let text = memory.recognizedText?.text {
+            HStack {
+              Image(systemName: "text.viewfinder")
+              
+              Text(text)
+                .lineLimit(1)
+            }
+            .font(.caption2)
+            .italic()
+            .bold()
+            .foregroundStyle(.tertiary)
+          }
         }
+      }
+      .when(memory.isPrivate) {
+        $0.redacted(reason: .placeholder)
       }
     }
     .listRowBackground(Color.clear)

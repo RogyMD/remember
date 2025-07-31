@@ -128,6 +128,7 @@ public struct MemoryTagsPickerView: View {
       
       Section {
         TextField("Add new tag...", text: $store.newTag)
+          .autocorrectionDisabled()
           .onSubmit {
             store.send(.primaryButtonTapped)
             newTagFocused = true

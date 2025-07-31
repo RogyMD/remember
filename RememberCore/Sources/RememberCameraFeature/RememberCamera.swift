@@ -134,19 +134,19 @@ public struct RememberCameraView: View {
         Menu {
           Button {
             isPhotosPresented = true
-            } label: {
-              Label("Photos", systemImage: "photo.on.rectangle.angled")
-            }
-            Button {
-              isFilesPresented = true
-            } label: {
-              Label("Files", systemImage: "folder")
-            }
-            Button {
-              store.send(.settingsButtonTapped)
-            } label: {
-              Label("Settings", systemImage: "gear")
-            }
+          } label: {
+            Label("Photos", systemImage: "photo.on.rectangle.angled")
+          }
+          Button {
+            isFilesPresented = true
+          } label: {
+            Label("Files", systemImage: "folder")
+          }
+          Button {
+            store.send(.settingsButtonTapped)
+          } label: {
+            Label("Settings", systemImage: "gear")
+          }
         } label: {
           Image(systemName: "ellipsis")
             .resizable()

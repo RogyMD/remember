@@ -6,9 +6,11 @@ public struct Memory: Sendable, Equatable, Identifiable {
   public let created: Date
   public var modified: Date
   public var notes: String
+  public var isPrivate: Bool
   public var items: IdentifiedArrayOf<MemoryItem>
   public var tags: IdentifiedArrayOf<MemoryTag>
   public var location: MemoryLocation?
+  public var recognizedText: RecognizedText?
   public var isNew: Bool {
     (items.isEmpty && location == nil && tags.isEmpty) ||
     (items.count == 1 && location == nil && tags.isEmpty && items[0].name.isEmpty)
@@ -18,17 +20,21 @@ public struct Memory: Sendable, Equatable, Identifiable {
     created: Date = Date(),
     modified: Date? = nil,
     notes: String = "",
+    isPrivate: Bool = false,
     items: Array<MemoryItem> = [],
     tags: Array<MemoryTag> = [],
-    location: MemoryLocation? = nil
+    location: MemoryLocation? = nil,
+    recognizedText: RecognizedText? = nil
   ) {
     self.id = id
     self.created = created
     self.modified = modified ?? created
     self.notes = notes
+    self.isPrivate = isPrivate
     self.items = items.identified
     self.tags = tags.identified
     self.location = location
+    self.recognizedText = recognizedText
   }
 }
 
@@ -65,5 +71,29 @@ public struct MemoryItem: Sendable, Equatable, Identifiable {
     self.id = id
     self.name = name
     self.center = center
+  }
+}
+
+public struct TextFrame: Equatable, Identifiable, Sendable, Hashable {
+  public var id: Self { self }
+  public var text: String
+  public var frame: CGRect
+  public init(text: String, frame: CGRect) {
+    self.text = text
+    self.frame = frame
+  }
+}
+
+public struct RecognizedText: Equatable, Sendable {
+  public var id: String
+  public var text: String
+  public var textFrames: [TextFrame]
+  public init(id: String, text: String, textFrames: [TextFrame]) {
+    self.id = id
+    self.text = text
+    self.textFrames = textFrames
+  }
+  public var isEmpty: Bool {
+    text.isEmpty
   }
 }

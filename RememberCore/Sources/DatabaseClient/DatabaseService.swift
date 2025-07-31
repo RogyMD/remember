@@ -25,7 +25,15 @@ actor DatabaseService {
       try insert(MemoryModel(memory))
       return
     }
+    let oldLocation = existingMemory.location
+    let oldRecognizedText = existingMemory.recognizedText
     existingMemory.update(memory)
+    if let oldLocation, oldLocation != existingMemory.location {
+      modelContext.delete(oldLocation)
+    }
+    if let oldRecognizedText, oldRecognizedText != existingMemory.recognizedText {
+      modelContext.delete(oldRecognizedText)
+    }
     try modelContext.save()
   }
   func updateItem(_ item: MemoryItem) throws {
@@ -92,21 +100,28 @@ extension MemoryModel {
       created: memory.created,
       modified: memory.modified,
       notes: memory.notes,
+      isPrivate: memory.isPrivate,
       items: memory.items.map(ItemModel.init),
       tags: memory.tags.map(TagModel.init),
-      location: memory.location.map(LocationModel.init)
+      location: memory.location.map(LocationModel.init),
+      recognizedText: memory.recognizedText.map(RecognizedTextModel.init)
     )
   }
   
   func update(_ memory: Memory) {
     guard id == memory.id, modified != memory.modified else { return }
     modified = memory.modified
+    isPrivate = memory.isPrivate
     notes = memory.notes
     let newItems = memory.items.map(ItemModel.init)
+    let newRecognizedText = memory.recognizedText.map(RecognizedTextModel.init)
     let newTags = memory.tags.map(TagModel.init)
     let newLocation = memory.location.map(LocationModel.init)
     if location != newLocation {
       location = newLocation
+    }
+    if recognizedText != newRecognizedText {
+      recognizedText = newRecognizedText
     }
     if newItems != items {
       let updatedItems = newItems.map { item in
@@ -154,6 +169,25 @@ extension LocationModel {
     self.init(
       latitude: location.lat,
       longitude: location.long
+    )
+  }
+}
+
+extension RecognizedTextModel {
+  convenience init(_ recognizedText: RecognizedText) {
+    self.init(
+      id: recognizedText.id,
+      text: recognizedText.text,
+      textFrames: recognizedText.textFrames.map(TextFrameModel.init)
+    )
+  }
+}
+
+extension TextFrameModel {
+  convenience init(_ textFrame: TextFrame) {
+    self.init(
+      text: textFrame.text,
+      frame: textFrame.frame
     )
   }
 }

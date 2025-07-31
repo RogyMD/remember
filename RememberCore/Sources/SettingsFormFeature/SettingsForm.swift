@@ -1,36 +1,76 @@
 import ComposableArchitecture
 import RememberCore
 import SwiftUI
+import DatabaseClient
+import FileClient
 
 @Reducer
 public struct SettingsForm {
+  @ObservableState
   public struct State: Equatable {
+    var syncResult: DatabaseClient.SyncResult?
+    var isSyncing: Bool = false
     public init() {}
   }
   
   @CasePathable
-  public enum Action: Equatable {
+  public enum Action: Equatable, BindableAction {
+    case binding(BindingAction<State>)
     case writeReviewRowTapped
     case learnMoreRowTapped
     case closeButtonTapped
     case appSettingsTapped
+    case syncButtonTapped
+    case syncFinished(DatabaseClient.SyncResult)
+    case syncResultAlertClearButtonTapped
   }
   
   @Dependency(\.openURL) var openURL
   @Dependency(\.dismiss) var dismiss
+  @Dependency(\.database) var database
+  @Dependency(\.fileClient) var fileClient
   
   public init() {}
   
-  public func reduce(into state: inout State, action: Action) -> Effect<Action> {
-    switch action {
-    case .writeReviewRowTapped:
-      return .none
-    case .learnMoreRowTapped:
-      return .none
-    case .appSettingsTapped:
-      return .none
-    case .closeButtonTapped:
-      return .run { [dismiss] _ in await dismiss() }
+  
+  
+  public var body: some ReducerOf<Self> {
+    BindingReducer()
+    
+    Reduce { state, action in
+      switch action {
+      case .writeReviewRowTapped:
+        return .none
+      case .learnMoreRowTapped:
+        return .none
+      case .appSettingsTapped:
+        return .none
+      case .closeButtonTapped:
+        return .run { [dismiss] _ in await dismiss() }
+      case .syncButtonTapped:
+        state.isSyncing = true
+        return .run { [database] send in
+          let result = try await database.syncWithFileSystem()
+          await send(.syncFinished(result))
+        }
+      case .syncFinished(let result):
+        state.syncResult = result
+        state.isSyncing = false
+        return .none
+      case .syncResultAlertClearButtonTapped:
+        guard let result = state.syncResult else { return .none }
+        state.syncResult = nil
+        return .run { [fileClient, database] send in
+          for orphan in result.orphanItems {
+            try fileClient.removeItem(orphan)
+          }
+          for memoryId in result.invalidMemories {
+            try await database.deleteMemory(memoryId)
+          }
+        }
+      case .binding:
+        return .none
+      }
     }
   }
 }
@@ -39,7 +79,7 @@ public struct SettingsForm {
 // MARK: - SettingsFormView
 
 public struct SettingsFormView: View {
-  let store: StoreOf<SettingsForm>
+  @Bindable var store: StoreOf<SettingsForm>
   
   public init(store: StoreOf<SettingsForm>) {
     self.store = store
@@ -52,10 +92,24 @@ public struct SettingsFormView: View {
       }
       .listRowBackground(Color.clear.background(.thinMaterial))
       
-      Section("🫶 Thank You for Helping Remember") {
+      Section("Data") {
+        Button {
+          store.send(.syncButtonTapped, animation: .linear)
+        } label: {
+          Label("Sync File System", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
+        }
+        .disabled(store.isSyncing)
+      }
+      
+      Section("🫶 Thank You for Using Remember") {
+        Link(destination: AppConfig.helpURL) {
+          Label("Get Started", systemImage: "graduationcap.fill")
+            .foregroundStyle(Color(uiColor: .systemGreen))
+        }
+        
         Link(destination: AppConfig.writeReviewURL) {
           Label("Write a Review", systemImage: "star.fill")
-            .foregroundStyle(Color(uiColor: .systemYellow))
+            .foregroundStyle(Color(uiColor: .systemTeal))
         }
         
         ShareLink(
@@ -68,12 +122,27 @@ public struct SettingsFormView: View {
         }
         
         Link(destination: AppConfig.homeURL) {
-          Label("Learn more", systemImage: "graduationcap.fill")
-            .foregroundStyle(Color(uiColor: .systemGreen))
+          Label("About", systemImage: "info.circle.fill")
+            .foregroundStyle(Color(uiColor: .label))
         }
       }
       .listRowBackground(Color.clear.background(.thinMaterial))
     }
+    .alert(
+      item: $store.syncResult,
+      title: { _ in
+        Text("Sync Report")
+      },
+      actions: { result in
+        if result.orphanItems.isEmpty == false || result.invalidMemories.isEmpty == false {
+          Button("Remove", role: .destructive) {
+            store.send(.syncResultAlertClearButtonTapped)
+          }
+        }
+      },
+      message: { result in
+        Text(result.reportMessage)
+      })
     .scrollContentBackground(.hidden)
     .navigationTitle("Settings")
     .toolbar {
@@ -82,6 +151,16 @@ public struct SettingsFormView: View {
           store.send(.closeButtonTapped)
         }
       }
+    }
+  }
+}
+
+extension DatabaseClient.SyncResult {
+  var reportMessage: String {
+    if orphanItems.isEmpty && invalidMemories.isEmpty {
+      "All clear now"
+    } else {
+      "- \(invalidMemories.count) Invalid Memories\n- \(orphanItems.count) Invalid Memories Files\nDo you want to remove invalid memory files?"
     }
   }
 }

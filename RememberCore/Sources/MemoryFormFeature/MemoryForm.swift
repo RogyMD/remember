@@ -87,13 +87,13 @@ public struct MemoryForm: Sendable {
         return .none
       case .onAppear:
         if state.isNew {
-          state.memoryItemPicker = .init(image: state.previewImage, items: state.memory.items)
+          state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText)
         }
         return .none
       case .doneButtonTapped, .cancelButtonTapped, .forgetButtonTapped:
         return .none
       case .imageRowTapped:
-        state.memoryItemPicker = .init(image: state.previewImage, items: state.memory.items)
+        state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText)
         return .none
       case .tagsRowTapped:
         state.tagsPicker = .init(selectedTags: Set(state.memory.tags.ids))
@@ -156,8 +156,13 @@ public struct MemoryForm: Sendable {
     switch action {
     case .doneButtonTapped:
       let newItems = (state.memoryItemPicker?.items.filter({ $0.name.trimmingCharacters(in: .whitespaces).isEmpty == false }) ?? []).identified
+      let newRecognizedText = state.memoryItemPicker?.recognizedText
       if newItems != state.memory.items {
         state.memory.items = newItems
+        state.memory.modified = now
+      }
+      if state.memory.recognizedText != newRecognizedText {
+        state.memory.recognizedText = newRecognizedText
         state.memory.modified = now
       }
       state.memoryItemPicker = nil
@@ -183,7 +188,11 @@ public struct MemoryForm: Sendable {
       return .none
     case .zoomedOut:
       return .none
-    case .onAppear:
+    case .onAppear, .deleteItemButtonTapped:
+      return .none
+    case .recognizeTextButtonTapped:
+      return .none
+    case .recognizedTextTapped(_):
       return .none
     }
   }
@@ -208,14 +217,28 @@ public struct MemoryFormView: View {
             store.send(.imageRowTapped, animation: .linear)
           } label: {
             if store.memoryItemPicker == nil {
-              store.previewImage
+              ZStack(alignment: .bottomTrailing) {
+                store.previewImage
                   .resizable()
                   .aspectRatio(contentMode: .fill)
                   .frame(height: 180, alignment: store.memory.imageAligment)
                   .frame(maxWidth: .infinity)
                   .cornerRadius(.cornerRadius)
                   .matchedGeometryEffect(id: "image", in: image)
+                if store.memory.recognizedText?.isEmpty == false {
+                  Image(systemName: "text.viewfinder")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(10)
+                    .background(.thinMaterial)
+                    .clipShape(Circle())
+                    .frame(width: 44, height: 44, alignment: .center)
+                    .foregroundStyle(Color(uiColor: .label))
+                    .zIndex(1)
+                    .padding([.bottom, .trailing], 8)
+                }
               }
+            }
           }
           .animation(.linear, value: store.memoryItemPicker == nil)
           
@@ -229,6 +252,11 @@ public struct MemoryFormView: View {
               .multilineTextAlignment(.leading)
               .lineLimit(0)
               .foregroundStyle(Color.label)
+          }
+          
+          Toggle(isOn: $store.memory.isPrivate) {
+            Label("Private Memory", systemImage: store.memory.isPrivate ? "lock.fill" : "lock.open.fill")
+              .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
           }
         }
         
@@ -305,6 +333,7 @@ public struct MemoryFormView: View {
           toolbarContent
         }
     })
+    .toolbarBackgroundVisibility(.visible, for: .bottomBar)
     .navigationTitle(Text(store.memory.name))
     .sheet(store: store.scope(state: \.$tagsPicker, action: \.tagsPicker)) { store in
       NavigationStack {
@@ -344,14 +373,14 @@ public struct MemoryFormView: View {
   @ToolbarContentBuilder
   var toolbarContent: some ToolbarContent {
     ToolbarItem(placement: .topBarTrailing) {
-      Button("Remember") {
+      Button("Done") {
         store.send(.doneButtonTapped, animation: .linear)
       }
       .bold()
     }
     ToolbarItem(placement: .topBarLeading) {
       if store.isNew {
-        Button("Forget") {
+        Button("Delete") {
           store.send(.forgetButtonTapped, animation: .linear)
         }
         .foregroundStyle(.red)

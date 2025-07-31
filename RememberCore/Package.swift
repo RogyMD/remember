@@ -29,6 +29,7 @@ let package = Package(
         .library(name: "RequestStoreReview", targets: ["RequestStoreReview"]),
         .library(name: "SharingKeys", targets: ["SharingKeys"]),
         .library(name: "FileClient", targets: ["FileClient"]),
+        .library(name: "TextRecognizerClient", targets: ["TextRecognizerClient"]),
     ],
     dependencies: [
       .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
@@ -63,6 +64,7 @@ let package = Package(
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             .product(name: "ZoomableImage", package: "ZoomableImage"),
             "RememberCore",
+            "TextRecognizerClient",
           ]
         ),
         .target(
@@ -115,6 +117,8 @@ let package = Package(
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             "RememberCore",
+            "DatabaseClient",
+            "FileClient",
           ]
         ),
         .target(
@@ -167,6 +171,12 @@ let package = Package(
         ),
         .target(
           name: "FileClient",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+          ]
+        ),
+        .target(
+          name: "TextRecognizerClient",
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
           ]
