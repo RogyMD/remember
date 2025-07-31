@@ -155,14 +155,14 @@ public struct MemoryItemPicker {
 
 extension String {
   func itemFrame(center: CGPoint) -> CGRect {
-    let padding = Double.padding * 4
+    let padding = Double.padding * 3
     var size = NSAttributedString(
       string: self,
       attributes: [.font: UIFont.item]
     ).size()
     size.width += padding
     size.height += padding
-    var itemFrame = CGRect(center: center, size: size)
+    let itemFrame = CGRect(center: center, size: size)
     return itemFrame
   }
 }
@@ -185,16 +185,9 @@ public struct MemoryItemPickerView: View {
   }
   
   func position(for item: MemoryItem) -> CGPoint {
-    var adjustedCenter = item.center
-    adjustedCenter.y += 120
-    guard item.id == focusedItem, keyboardFrame != .zero, keyboardFrame.contains(adjustedCenter) else { return item.center }
-    return .init(x: item.center.x, y: keyboardFrame.minY - 120)
-  }
-  
-  func position(for center: CGPoint) -> CGPoint {
-    var adjustedCenter = center
-    adjustedCenter.y -= 88 // FIXME: replace with topSafeArea
-    return adjustedCenter
+    guard item.id == focusedItem, keyboardFrame != .zero, keyboardFrame.contains(item.center) else { return item.center }
+    let itemHeight = item.name.itemFrame(center: .zero).height
+    return .init(x: item.center.x, y: keyboardFrame.minY - itemHeight / 2)
   }
   
   var offset: CGSize {
@@ -208,32 +201,51 @@ public struct MemoryItemPickerView: View {
   public var body: some View {
     ZStack {
       ZoomableImage(image: store.image, contentMode: .fill, magnification: $magnification)
-        .background(Color(uiColor: .systemBackground))
-        .ignoresSafeArea()
+        .background(Color.clear)
+        .simultaneousGesture(
+          DragGesture(minimumDistance: .zero)
+            .updating($dragValue, body: { value, state, _ in
+              state = value
+            })
+        )
+        
       
       if store.showsItems && isDragging == false {
         ForEach(store.items) { item in
           itemCell(for: item)
         }
       }
+      
       if store.isRecognizingText, let recognizedText = store.recognizedText {
         ForEach(recognizedText.textFrames) { textFrame in
+          
           Button {
             store.send(.recognizedTextTapped(textFrame), animation: .bouncy)
           } label: {
-            Text(textFrame.text)
-              .padding(8)
-              .lineLimit(0)
-              .background(Color.accentColor.opacity(0.8), in: Capsule())
-              .foregroundStyle(Color.primary)
+            if store.state.isRecognitionIntersectingOthers(textFrame) {
+              Circle()
+                .fill(Color.green)
+                .stroke(Color.secondary, style: .init(lineWidth: 3))
+                .frame(width: 12, height: 12)
+                .padding(12)
+                .contentShape(Circle())
+            } else {
+              Text(textFrame.text)
+                .padding(8)
+                .lineLimit(0)
+                .background(Color.accentColor.opacity(0.8), in: Capsule())
+                .foregroundStyle(Color.primary)
+            }
+            
           }
 //          .minimumScaleFactor(0.5)
 //          .frame(width: textFrame.frame.width, height: textFrame.frame.height)
-          .position(position(for: textFrame.frame.center))
+          .position(textFrame.frame.center)
           .transition(.scale(scale: 0.5).combined(with: .opacity))
         }
       }
     }
+    .ignoresSafeArea()
 //    .offset(offset)
 //    .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
 //    .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
@@ -242,12 +254,12 @@ public struct MemoryItemPickerView: View {
 //      .updating($dragValue, body: { value, state, _ in
 //        state = value
 //      }))
-    .simultaneousGesture(
-      DragGesture(minimumDistance: .zero)
-        .updating($dragValue, body: { value, state, _ in
-          state = value
-        })
-    )
+//    .simultaneousGesture(
+//      DragGesture(minimumDistance: .zero)
+//        .updating($dragValue, body: { value, state, _ in
+//          state = value
+//        })
+//    )
     .onAppear {
       store.send(.onAppear)
     }
@@ -273,7 +285,7 @@ public struct MemoryItemPickerView: View {
       }
     })
     .bind($store.focusedMemoryItem, to: $focusedItem)
-    .navigationTitle(Text(store.title))
+    .navigationTitle(store.title)
     .navigationBarTitleDisplayMode(.inline)
     .toolbarBackgroundVisibility(.visible, for: .navigationBar, .bottomBar)
     .toolbarVisibility((isZooming || isDragging) ? .hidden : .visible, for: .navigationBar, .bottomBar)
@@ -294,7 +306,18 @@ public struct MemoryItemPickerView: View {
           Button {
             store.send(.labelVisibilityButtonTapped, animation: .linear)
           } label: {
-            Image(systemName: store.showsItems ? "capsule" : "capsule.fill")
+            Image(systemName: store.showsItems ? "capsule.fill" : "capsule")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .padding(10)
+              .when(
+                store.showsItems,
+                then: { $0.background(Color.accentColor) },
+                else: { $0.background(.thinMaterial) }
+              )
+              .clipShape(Circle())
+              .frame(width: 44, height: 44, alignment: .center)
+              .foregroundStyle(Color(uiColor: .label))
           }
           
           Spacer()
@@ -383,6 +406,24 @@ extension MemoryItemPicker.State {
   }
   var isTextRecognitionInProgress: Bool {
     isRecognizingText && recognizedText == nil
+  }
+  func isRecognitionIntersectingOthers(_ recognition: TextFrame) -> Bool {
+    guard let textFrames = recognizedText?.textFrames else {
+      return false
+    }
+    let recognitionFrame = recognition.itemFrame
+    for textFrame in textFrames where textFrame != recognition {
+      if recognitionFrame.intersects(textFrame.itemFrame) {
+        return true
+      }
+    }
+    return false
+  }
+}
+
+extension TextFrame {
+  var itemFrame: CGRect {
+    text.itemFrame(center: frame.center)
   }
 }
 

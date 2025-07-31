@@ -316,6 +316,7 @@ public struct MemoryFormView: View {
           toolbarContent
         }
     })
+    .toolbarBackgroundVisibility(.visible, for: .bottomBar)
     .navigationTitle(Text(store.memory.name))
     .sheet(store: store.scope(state: \.$tagsPicker, action: \.tagsPicker)) { store in
       NavigationStack {

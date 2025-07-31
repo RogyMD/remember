@@ -62,12 +62,7 @@ extension TextRecognizerClient: DependencyKey {
     let frames: [RecognizedTextFrame] = observations.flatMap { observation -> [RecognizedTextFrame] in
       guard let topCandidate = observation.topCandidates(1).first else { return [] }
       let fullText = topCandidate.string
-      let cleanedText = fullText.replacingOccurrences(
-        of: "[^\\p{L}\\p{N}\\s]",
-        with: "",
-        options: .regularExpression
-      )
-      allText += cleanedText + " "
+      allText += fullText + " "
 
       var result: [RecognizedTextFrame] = []
 
@@ -75,10 +70,10 @@ extension TextRecognizerClient: DependencyKey {
       tagger.string = fullText
 
       tagger.enumerateTags(in: fullText.startIndex..<fullText.endIndex, unit: .word, scheme: .lexicalClass) { tag, tokenRange in
-        guard let tag = tag, (tag == .noun || tag == .organizationName) else { return true }
-
         let word = String(fullText[tokenRange])
-        let rect = VNImageRectForNormalizedRect(observation.boundingBox, cgImage.width, cgImage.height)
+        guard word.count > 2 else { return true }
+        let boundingBox = (try? topCandidate.boundingBox(for: tokenRange))?.boundingBox ?? observation.boundingBox
+        let rect = VNImageRectForNormalizedRect(boundingBox, cgImage.width, cgImage.height)
         let convertedRect = CGRect(
           x: rect.origin.x / screenScale,
           y: (CGFloat(cgImage.height) - rect.origin.y - rect.height) / screenScale,

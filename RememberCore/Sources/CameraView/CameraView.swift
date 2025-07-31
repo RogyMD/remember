@@ -1,6 +1,5 @@
 import SwiftUI
 @preconcurrency import AVFoundation
-//import IssueReporting
 
 public struct CameraView: UIViewControllerRepresentable {
   // Closure returns the captured (resized) image and the normalized focus point (0...1)
@@ -532,6 +531,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       sessionDevice.unlockForConfiguration()
       torchButton.setImage(UIImage(systemName: "flashlight.on.fill"), for: .normal)
     } catch {
+      NSLog("Failed to focus. Error: \(error)")
 //            reportIssue(error)
     }
   }
@@ -625,8 +625,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       self.longPressCircle?.removeFromSuperview()
       self.longPressCircle = nil
       
-      let adjustedPoint = CGPoint(x: point.x, y: point.y - view.safeAreaInsets.top)
-      let normalizedPoint = adjustedPoint.convertPointToImageCoordinates(from: self.view.bounds, to: fullImage.size)
+      let normalizedPoint = point.convertPointToImageCoordinates(from: self.view.bounds, to: fullImage.size)
       
       self.onCapture?(fullImage, normalizedPoint)
       self.turnOffTorchIfNeeded()
