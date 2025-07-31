@@ -13,21 +13,44 @@ public enum SchemaV3: VersionedSchema {
       RecognizedTextModel.self,
     ]
   }
+  public struct Rect: Codable, Sendable {
+    public var x: CGFloat
+    public var y: CGFloat
+    public var width: CGFloat
+    public var height: CGFloat
+    public init(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) {
+      self.x = x
+      self.y = y
+      self.width = width
+      self.height = height
+    }
+    public var cgRect: CGRect { .init(x: x, y: y, width: width, height: height) }
+    public init(_ rect: CGRect) {
+      self.init(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height)
+    }
+    static let zero = Self(.zero)
+  }
   @Model
   public final class TextFrameModel {
     public var text: String
-    public var frame: CGRect
+    public var frame: Rect = Rect.zero
     init(text: String, frame: CGRect) {
       self.text = text
-      self.frame = frame
+      self.frame = .init(frame)
     }
   }
   @Model
   public final class RecognizedTextModel {
+    @Attribute(.unique) public var id: String
     public var text: String
     @Relationship(deleteRule: .cascade)
     public var textFrames: [TextFrameModel]
-    init(text: String, textFrames: [TextFrameModel]) {
+    init(
+      id: String,
+      text: String,
+      textFrames: [TextFrameModel]
+    ) {
+      self.id = id
       self.text = text
       self.textFrames = textFrames
     }

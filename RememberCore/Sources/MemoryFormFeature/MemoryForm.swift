@@ -87,13 +87,13 @@ public struct MemoryForm: Sendable {
         return .none
       case .onAppear:
         if state.isNew {
-          state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items)
+          state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText)
         }
         return .none
       case .doneButtonTapped, .cancelButtonTapped, .forgetButtonTapped:
         return .none
       case .imageRowTapped:
-        state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items)
+        state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText)
         return .none
       case .tagsRowTapped:
         state.tagsPicker = .init(selectedTags: Set(state.memory.tags.ids))
@@ -156,12 +156,15 @@ public struct MemoryForm: Sendable {
     switch action {
     case .doneButtonTapped:
       let newItems = (state.memoryItemPicker?.items.filter({ $0.name.trimmingCharacters(in: .whitespaces).isEmpty == false }) ?? []).identified
+      let newRecognizedText = state.memoryItemPicker?.recognizedText
       if newItems != state.memory.items {
         state.memory.items = newItems
         state.memory.modified = now
       }
-      // TODO: save recognizedText in db
-      state.memory.recognizedText = state.memoryItemPicker?.recognizedText
+      if state.memory.recognizedText != newRecognizedText {
+        state.memory.recognizedText = newRecognizedText
+        state.memory.modified = now
+      }
       state.memoryItemPicker = nil
       return .none
     case .cancelButtonTapped:
@@ -214,14 +217,28 @@ public struct MemoryFormView: View {
             store.send(.imageRowTapped, animation: .linear)
           } label: {
             if store.memoryItemPicker == nil {
-              store.previewImage
+              ZStack(alignment: .bottomTrailing) {
+                store.previewImage
                   .resizable()
                   .aspectRatio(contentMode: .fill)
                   .frame(height: 180, alignment: store.memory.imageAligment)
                   .frame(maxWidth: .infinity)
                   .cornerRadius(.cornerRadius)
                   .matchedGeometryEffect(id: "image", in: image)
+                if store.memory.recognizedText?.isEmpty == false {
+                  Image(systemName: "text.viewfinder")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(10)
+                    .background(.thinMaterial)
+                    .clipShape(Circle())
+                    .frame(width: 44, height: 44, alignment: .center)
+                    .foregroundStyle(Color(uiColor: .label))
+                    .zIndex(1)
+                    .padding([.bottom, .trailing], 8)
+                }
               }
+            }
           }
           .animation(.linear, value: store.memoryItemPicker == nil)
           

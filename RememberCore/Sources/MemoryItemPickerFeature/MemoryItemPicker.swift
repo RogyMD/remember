@@ -14,15 +14,17 @@ public struct MemoryItemPicker {
     var focusedMemoryItem: MemoryItem.ID?
     var shouldFocusItem: Bool = true
     var showsItems: Bool = true
-    var isRecognizingText: Bool = false
+    var showsRecognizedText: Bool = false
     var isBarsHidden: Bool = false
     public var recognizedText: RecognizedText?
+    var displayTextFrames: [TextFrame]?
     
     public init(imageURL: URL, image: Image, items: IdentifiedArrayOf<MemoryItem> = [], recognizedText: RecognizedText? = nil) {
       self.imageURL = imageURL
       self.image = image
       self.items = items
-      self.shouldFocusItem = items.count == 1 && items.first?.name.isEmpty == true
+      self.recognizedText = recognizedText
+      self.shouldFocusItem = items.count == 1 && items.first?.name.isEmpty == true && recognizedText == nil
     }
     
     public init() {
@@ -66,23 +68,28 @@ public struct MemoryItemPicker {
       case .recognizedTextTapped(let textFrame):
         let item = MemoryItem(id: uuid().uuidString, name: textFrame.text, center: textFrame.frame.center)
         state.items.append(item)
-        state.recognizedText?.textFrames.removeAll(where: { textFrame == $0 })
+        state.displayTextFrames?.removeAll(where: { textFrame == $0 })
         state.isBarsHidden = false
         state.showsItems = true
         return .none
       case .recognizeTextButtonTapped:
-        if state.isRecognizingText {
-          state.isRecognizingText = false
+        if state.showsRecognizedText {
+          state.showsRecognizedText = false
           state.recognizedText = nil
           return .none
         } else {
-          state.isRecognizingText = true
-          return .run { [imageURL = state.imageURL, textRecognizer] send in
-            let data = try Data(contentsOf: imageURL)
-            let image = UIImage(data: data) ?? UIImage()
-            let result = try await textRecognizer.recognizeTextInImage(image)
-            let recognizedText = RecognizedText(result)
-            await send(.set(\.recognizedText, recognizedText), animation: .bouncy)
+          state.showsRecognizedText = true
+          if let recognizedText = state.recognizedText {
+            return .send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
+          } else {
+            return .run { [imageURL = state.imageURL, textRecognizer, uuid] send in
+              let data = try Data(contentsOf: imageURL)
+              let image = UIImage(data: data) ?? UIImage()
+              let result = try await textRecognizer.recognizeTextInImage(image)
+              let recognizedText = RecognizedText(uuid: { uuid().uuidString }, result: result)
+              await send(.set(\.recognizedText, recognizedText))
+              await send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
+            }
           }
         }
       case .labelVisibilityButtonTapped:
@@ -224,9 +231,8 @@ public struct MemoryItemPickerView: View {
         }
       }
       
-      if store.isRecognizingText, let recognizedText = store.recognizedText {
-        ForEach(recognizedText.textFrames) { textFrame in
-          
+      if store.showsRecognizedText, let textFrames = store.displayTextFrames {
+        ForEach(textFrames) { textFrame in
           Button {
             store.send(.recognizedTextTapped(textFrame), animation: .bouncy)
           } label: {
@@ -246,8 +252,6 @@ public struct MemoryItemPickerView: View {
             }
             
           }
-//          .minimumScaleFactor(0.5)
-//          .frame(width: textFrame.frame.width, height: textFrame.frame.height)
           .position(textFrame.frame.center)
           .transition(.scale(scale: 0.5).combined(with: .opacity))
         }
@@ -330,7 +334,9 @@ public struct MemoryItemPickerView: View {
           
           Spacer()
           
-          textScanButton
+          if store.showsRecognizeTextButton {
+            textScanButton
+          }
         }
       }
     }
@@ -347,7 +353,7 @@ public struct MemoryItemPickerView: View {
           .aspectRatio(contentMode: .fit)
           .padding(10)
           .when(
-            store.isRecognizingText,
+            store.showsRecognizedText,
             then: { $0.background(Color.accentColor) },
             else: { $0.background(.thinMaterial) }
           )
@@ -416,8 +422,11 @@ extension MemoryItemPicker.State {
     let name = items.map(\.name).joined(separator: ", ")
     return name.isEmpty ? "Label items" : name
   }
+  var showsRecognizeTextButton: Bool {
+    recognizedText?.isEmpty != true
+  }
   var isTextRecognitionInProgress: Bool {
-    isRecognizingText && recognizedText == nil
+    showsRecognizedText && recognizedText == nil
   }
   func isRecognitionIntersectingOthers(_ recognition: TextFrame) -> Bool {
     guard let textFrames = recognizedText?.textFrames else {
@@ -468,8 +477,8 @@ extension UIFont {
 }
 
 extension RecognizedText {
-  init(_ result: TextRecognizerClient.Result) {
-    self.init(text: result.text, textFrames: result.textFrames.map({ TextFrame(text: $0.text, frame: $0.frame) }))
+  init(uuid: () -> String, result: TextRecognizerClient.Result) {
+    self.init(id: uuid(), text: result.text, textFrames: result.textFrames.map({ TextFrame(text: $0.text, frame: $0.frame) }))
   }
 }
 

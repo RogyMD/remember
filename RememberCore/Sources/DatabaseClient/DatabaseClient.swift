@@ -230,6 +230,7 @@ extension Memory {
 extension RecognizedText {
   init(_ model: RecognizedTextModel) {
     self.init(
+      id: model.id,
       text: model.text,
       textFrames: model.textFrames.map(TextFrame.init)
     )
@@ -238,7 +239,7 @@ extension RecognizedText {
 
 extension TextFrame {
   init(_ textFrame: TextFrameModel) {
-    self.init(text: textFrame.text, frame: textFrame.frame)
+    self.init(text: textFrame.text, frame: textFrame.frame.cgRect)
   }
 }
 

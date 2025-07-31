@@ -25,7 +25,15 @@ actor DatabaseService {
       try insert(MemoryModel(memory))
       return
     }
+    let oldLocation = existingMemory.location
+    let oldRecognizedText = existingMemory.recognizedText
     existingMemory.update(memory)
+    if let oldLocation, oldLocation != existingMemory.location {
+      modelContext.delete(oldLocation)
+    }
+    if let oldRecognizedText, oldRecognizedText != existingMemory.recognizedText {
+      modelContext.delete(oldRecognizedText)
+    }
     try modelContext.save()
   }
   func updateItem(_ item: MemoryItem) throws {
@@ -168,6 +176,7 @@ extension LocationModel {
 extension RecognizedTextModel {
   convenience init(_ recognizedText: RecognizedText) {
     self.init(
+      id: recognizedText.id,
       text: recognizedText.text,
       textFrames: recognizedText.textFrames.map(TextFrameModel.init)
     )
@@ -177,7 +186,8 @@ extension RecognizedTextModel {
 extension TextFrameModel {
   convenience init(_ textFrame: TextFrame) {
     self.init(
-      text: textFrame.text, frame: textFrame.frame
+      text: textFrame.text,
+      frame: textFrame.frame
     )
   }
 }
