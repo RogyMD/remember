@@ -87,13 +87,13 @@ public struct MemoryForm: Sendable {
         return .none
       case .onAppear:
         if state.isNew {
-          state.memoryItemPicker = .init(image: state.previewImage, items: state.memory.items)
+          state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items)
         }
         return .none
       case .doneButtonTapped, .cancelButtonTapped, .forgetButtonTapped:
         return .none
       case .imageRowTapped:
-        state.memoryItemPicker = .init(image: state.previewImage, items: state.memory.items)
+        state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items)
         return .none
       case .tagsRowTapped:
         state.tagsPicker = .init(selectedTags: Set(state.memory.tags.ids))
@@ -160,6 +160,8 @@ public struct MemoryForm: Sendable {
         state.memory.items = newItems
         state.memory.modified = now
       }
+      // TODO: save recognizedText in db
+      state.memory.recognizedText = state.memoryItemPicker?.recognizedText
       state.memoryItemPicker = nil
       return .none
     case .cancelButtonTapped:
@@ -184,6 +186,10 @@ public struct MemoryForm: Sendable {
     case .zoomedOut:
       return .none
     case .onAppear, .deleteItemButtonTapped:
+      return .none
+    case .recognizeTextButtonTapped:
+      return .none
+    case .recognizedTextTapped(_):
       return .none
     }
   }

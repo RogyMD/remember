@@ -58,6 +58,7 @@ extension TextRecognizerClient: DependencyKey {
     }
 
     var allText = ""
+    var recognizedNouns: Set<String> = []
     let frames: [RecognizedTextFrame] = observations.flatMap { observation -> [RecognizedTextFrame] in
       guard let topCandidate = observation.topCandidates(1).first else { return [] }
       let fullText = topCandidate.string
@@ -84,8 +85,10 @@ extension TextRecognizerClient: DependencyKey {
           width: rect.width / screenScale,
           height: rect.height / screenScale
         )
-
-        result.append(RecognizedTextFrame(text: word, frame: convertedRect))
+        let (inserted, _) = recognizedNouns.insert(word)
+        if inserted {
+          result.append(RecognizedTextFrame(text: word, frame: convertedRect))
+        }
         return true
       }
 

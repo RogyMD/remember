@@ -2,18 +2,23 @@ import ComposableArchitecture
 import RememberCore
 import SwiftUI
 import ZoomableImage
+import TextRecognizerClient
 
 @Reducer
 public struct MemoryItemPicker {
   @ObservableState
   public struct State: Equatable {
+    var imageURL: URL
     var image: Image
     public var items: IdentifiedArrayOf<MemoryItem>
     var focusedMemoryItem: MemoryItem.ID?
     var shouldFocusItem: Bool = true
     var showsItems: Bool = true
+    var isRecognizingText: Bool = false
+    public var recognizedText: RecognizedText?
     
-    public init(image: Image, items: IdentifiedArrayOf<MemoryItem> = []) {
+    public init(imageURL: URL, image: Image, items: IdentifiedArrayOf<MemoryItem> = [], recognizedText: RecognizedText? = nil) {
+      self.imageURL = imageURL
       self.image = image
       self.items = items
       self.shouldFocusItem = items.count == 1 && items.first?.name.isEmpty == true
@@ -21,6 +26,7 @@ public struct MemoryItemPicker {
     
     public init() {
       self.init(
+        imageURL: URL(string: "image.url")!,
         image: Image(systemName: "car"),
         items: [.init(
           id: UUID().uuidString,
@@ -42,15 +48,40 @@ public struct MemoryItemPicker {
     case cancelButtonTapped
     case labelVisibilityButtonTapped
     case zoomedOut
+    case recognizeTextButtonTapped
+    case recognizedTextTapped(TextFrame)
     case onAppear
   }
   
   public init() {}
   
+  @Dependency(\.textRecognizer) var textRecognizer
+  @Dependency(\.uuid) var uuid
+  
   public var body: some ReducerOf<Self> {
     BindingReducer()
     Reduce { state, action in
       switch action {
+      case .recognizedTextTapped(let textFrame):
+        let item = MemoryItem(id: uuid().uuidString, name: textFrame.text, center: textFrame.frame.center)
+        state.items.append(item)
+        state.recognizedText?.textFrames.removeAll(where: { textFrame == $0 })
+        return .none
+      case .recognizeTextButtonTapped:
+        if state.isRecognizingText {
+          state.isRecognizingText = false
+          state.recognizedText = nil
+          return .none
+        } else {
+          state.isRecognizingText = true
+          return .run { [imageURL = state.imageURL, textRecognizer] send in
+            let data = try Data(contentsOf: imageURL)
+            let image = UIImage(data: data) ?? UIImage()
+            let result = try await textRecognizer.recognizeTextInImage(image)
+            let recognizedText = RecognizedText(result)
+            await send(.set(\.recognizedText, recognizedText), animation: .bouncy)
+          }
+        }
       case .labelVisibilityButtonTapped:
         state.showsItems.toggle()
         return .none
@@ -64,26 +95,27 @@ public struct MemoryItemPicker {
         }
       case .tappedImage(let point):
         let intersectsItem = state.items.first { (item: MemoryItem) in
-          let padding = Double.padding * 4
-          var size = NSAttributedString(
-            string: item.name,
-            attributes: [.font: UIFont.item]
-          ).size()
-          size.width += padding
-          size.height += padding
-          var itemFrame = CGRect(center: item.center, size: size)
+          var itemFrame = item.name.itemFrame(center: item.center)
           itemFrame.size.width += 12
           itemFrame.origin.y -= 12
           itemFrame.size.height += 12
           return itemFrame.contains(point)
         }
+        let intersectsRecognizedText =
+        if let recognizedText = state.recognizedText {
+          recognizedText.textFrames.contains(where: { $0.frame.offsetBy(dx: .zero, dy: 88).contains(point) })
+        } else {
+          false
+        }
         state.showsItems = true
         if let intersectsItem {
           return .send(.tappedItem(intersectsItem.id))
-        } else {
+        } else if intersectsRecognizedText == false {
           let item = MemoryItem(id: UUID().uuidString, name: "", center: point)
           state.items.append(item)
           state.focusedMemoryItem = item.id
+          return .none
+        } else {
           return .none
         }
       case .deleteItemButtonTapped(let id):
@@ -121,7 +153,19 @@ public struct MemoryItemPicker {
   }
 }
 
-
+extension String {
+  func itemFrame(center: CGPoint) -> CGRect {
+    let padding = Double.padding * 4
+    var size = NSAttributedString(
+      string: self,
+      attributes: [.font: UIFont.item]
+    ).size()
+    size.width += padding
+    size.height += padding
+    var itemFrame = CGRect(center: center, size: size)
+    return itemFrame
+  }
+}
 // MARK: - MemoryItemPickerView
 
 public struct MemoryItemPickerView: View {
@@ -131,8 +175,9 @@ public struct MemoryItemPickerView: View {
   @FocusState var focusedItem: MemoryItem.ID?
   @GestureState var dragValue: DragGesture.Value?
   private var isDismissable: Bool {
-    guard let dragValue else { return false }
-    return abs(dragValue.predictedEndTranslation.width) > Self.dismissDragTranslationThresholder || abs(dragValue.predictedEndTranslation.height) > Self.dismissDragTranslationThresholder
+    return false
+    //    guard let dragValue else { return false }
+    //    return abs(dragValue.predictedEndTranslation.width) > Self.dismissDragTranslationThresholder || abs(dragValue.predictedEndTranslation.height) > Self.dismissDragTranslationThresholder
   }
   
   public init(store: StoreOf<MemoryItemPicker>) {
@@ -146,8 +191,14 @@ public struct MemoryItemPickerView: View {
     return .init(x: item.center.x, y: keyboardFrame.minY - 120)
   }
   
+  func position(for center: CGPoint) -> CGPoint {
+    var adjustedCenter = center
+    adjustedCenter.y -= 88 // FIXME: replace with topSafeArea
+    return adjustedCenter
+  }
+  
   var offset: CGSize {
-    dragValue?.translation ?? .zero
+    .zero//dragValue?.translation ?? .zero
   }
   
   var isDragging: Bool {
@@ -165,11 +216,28 @@ public struct MemoryItemPickerView: View {
           itemCell(for: item)
         }
       }
+      if store.isRecognizingText, let recognizedText = store.recognizedText {
+        ForEach(recognizedText.textFrames) { textFrame in
+          Button {
+            store.send(.recognizedTextTapped(textFrame), animation: .bouncy)
+          } label: {
+            Text(textFrame.text)
+              .padding(8)
+              .lineLimit(0)
+              .background(Color.accentColor.opacity(0.8), in: Capsule())
+              .foregroundStyle(Color.primary)
+          }
+//          .minimumScaleFactor(0.5)
+//          .frame(width: textFrame.frame.width, height: textFrame.frame.height)
+          .position(position(for: textFrame.frame.center))
+          .transition(.scale(scale: 0.5).combined(with: .opacity))
+        }
+      }
     }
-    .offset(offset)
-    .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
-    .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
-    .animation(.easeOut, value: isDismissable)
+//    .offset(offset)
+//    .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
+//    .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
+//    .animation(.easeOut, value: isDismissable)
 //    .gesture(DragGesture(minimumDistance: 0)
 //      .updating($dragValue, body: { value, state, _ in
 //        state = value
@@ -223,17 +291,46 @@ public struct MemoryItemPickerView: View {
       }
       ToolbarItem(placement: .bottomBar) {
         HStack {
-          Spacer()
-          
           Button {
             store.send(.labelVisibilityButtonTapped, animation: .linear)
           } label: {
             Image(systemName: store.showsItems ? "capsule" : "capsule.fill")
           }
+          
+          Spacer()
+          
+          textScanButton
         }
       }
     }
     .modifier(KeyboardAdaptive(keyboardFrame: $keyboardFrame))
+  }
+  
+  private var textScanButton: some View {
+    Button {
+      store.send(.recognizeTextButtonTapped, animation: .linear)
+    } label: {
+      ZStack {
+        Image(systemName: "text.viewfinder")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .padding(10)
+          .when(
+            store.isRecognizingText,
+            then: { $0.background(Color.accentColor) },
+            else: { $0.background(.thinMaterial) }
+          )
+          .clipShape(Circle())
+          .frame(width: 44, height: 44, alignment: .center)
+          .foregroundStyle(Color(uiColor: .label))
+        
+        if store.isTextRecognitionInProgress {
+          ProgressView()
+            .progressViewStyle(.circular)
+        }
+      }
+    }
+    .disabled(store.isTextRecognitionInProgress)
   }
   
   @State var keyboardFrame: CGRect = .zero
@@ -284,6 +381,9 @@ extension MemoryItemPicker.State {
     let name = items.map(\.name).joined(separator: ", ")
     return name.isEmpty ? "Label items" : name
   }
+  var isTextRecognitionInProgress: Bool {
+    isRecognizingText && recognizedText == nil
+  }
 }
 
 extension Double {
@@ -314,6 +414,17 @@ extension UIFont {
   }
 }
 
+extension RecognizedText {
+  init(_ result: TextRecognizerClient.Result) {
+    self.init(text: result.text, textFrames: result.textFrames.map({ TextFrame(text: $0.text, frame: $0.frame) }))
+  }
+}
+
+extension CGRect {
+  var center: CGPoint {
+    .init(x: midX, y: midY)
+  }
+}
 
 //extension MemoryItemPickerView {
 //  var a11yID: A11yID { .ids }

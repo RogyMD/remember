@@ -74,8 +74,8 @@ public struct MemoryItem: Sendable, Equatable, Identifiable {
   }
 }
 
-public struct TextFrame: Equatable, Identifiable, Sendable {
-  public var id: CGRect { frame }
+public struct TextFrame: Equatable, Identifiable, Sendable, Hashable {
+  public var id: Self { self }
   public var text: String
   public var frame: CGRect
   public init(text: String, frame: CGRect) {
