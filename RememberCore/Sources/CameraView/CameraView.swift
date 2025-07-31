@@ -325,6 +325,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
   private func setupCameraAsync() {
     configureSession()
     addGestureRecognizers()
+    showTapFeedback(at: view.center, hapticFeedback: false)
     
     let previewLayer = AVCaptureVideoPreviewLayer(session: session)
     previewLayer.videoGravity = .resizeAspectFill
@@ -441,48 +442,48 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     view.addGestureRecognizer(pinchGesture)
   }
   
-  @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+  @objc private func handleTap(_ gesture: UIGestureRecognizer) {
     let tapPoint = gesture.location(in: view)
-    lastTapPoint = tapPoint
-    
-    // Add tap feedback
-    showTapFeedback(at: tapPoint)
     lastLongPressPoint = tapPoint
-    // Convert tap location to device focus point (normalized)
+    lastTapPoint = tapPoint
     guard let focusPoint = previewLayer?.captureDevicePointConverted(fromLayerPoint: tapPoint) else {
       return
     }
     focus(at: focusPoint)
+    showTapFeedback(at: tapPoint, hapticFeedback: true)
   }
   
   private func focus(at point: CGPoint) {
-    guard let device = (session.inputs.first as? AVCaptureDeviceInput)?.device else { return }
+    guard let device = (session.inputs.first as? AVCaptureDeviceInput)?.device, device.isFocusPointOfInterestSupported else { return }
     do {
       try device.lockForConfiguration()
-      if device.isFocusPointOfInterestSupported {
-        device.focusPointOfInterest = point
-        device.focusMode = .autoFocus
-      }
-      if device.isExposurePointOfInterestSupported {
-        device.exposurePointOfInterest = point
-        device.exposureMode = .continuousAutoExposure
-      }
+      device.focusPointOfInterest = point
+      device.focusMode = .autoFocus
+//      if device.isExposurePointOfInterestSupported {
+//        device.exposurePointOfInterest = point
+//        device.exposureMode = .continuousAutoExposure
+//      }
       device.unlockForConfiguration()
     } catch {
       //      reportIssue(error)
     }
   }
   
+  var observer: NSKeyValueObservation?
   @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
     if gesture.state == .began {
-      // Use the long press location as the capture point.
-      let pressPoint = gesture.location(in: view)
-      lastLongPressPoint = pressPoint
-      
-      // Add long press feedback and activity indicator
-      showLongPressFeedback(at: pressPoint)
-      
-      capturePhoto()
+      handleTap(gesture)
+      guard let device = (session.inputs.first as? AVCaptureDeviceInput)?.device else { return }
+      observer = device.observe(\.isAdjustingFocus, options: .new) { [weak self] _, change in
+        DispatchQueue.main.async {
+          guard let self else { return }
+          if change.newValue == false {
+            self.observer?.invalidate()
+            self.observer = nil
+            self.capturePhoto()
+          }
+        }
+      }
     }
   }
   
@@ -515,6 +516,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     }
   }
   
+  @objc
   private func capturePhoto() {
     let settings = AVCapturePhotoSettings()
     settings.photoQualityPrioritization = .speed
@@ -534,31 +536,32 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     }
   }
   
-  private var focusTargetView: UIView?
-  private func showTapFeedback(at point: CGPoint) {
-    if let focusTargetView {
-      focusTargetView.removeFromSuperview()
+  private let focusTargetView: UIView = FocusTargetView(frame: CGRect(x: 0, y: 0, width: 45, height: 45))
+  private func showTapFeedback(at point: CGPoint, hapticFeedback: Bool) {
+    if focusTargetView.superview == nil {
+      view.addSubview(focusTargetView)
+      focusTargetView.isUserInteractionEnabled = false
+      focusTargetView.backgroundColor = UIColor.clear
     }
-    let circleSize: CGFloat = 60
-    let circle = FocusTargetView(frame: CGRect(x: 0, y: 0, width: circleSize, height: circleSize))
-    focusTargetView = circle
-    circle.isUserInteractionEnabled = false
-    circle.backgroundColor = UIColor.clear
-    circle.center = point
-    self.view.addSubview(circle)
     
-    self.selectionFeedback.selectionChanged(at: point)
-    
-      UIView.animate(springDuration: 0.6, bounce: 0.5) {
-        circle.transform = CGAffineTransformMakeScale(0.6, 0.6).concatenating(.init(rotationAngle: .pi))
-        circle.alpha = 1
-      } completion: { _ in
-        UIView.animate(withDuration: 0.3) {
-          circle.alpha = 0.3
-        } completion: { _ in
-          circle.removeFromSuperview()
+    if hapticFeedback {
+      self.selectionFeedback.selectionChanged(at: point)
+      
+      UIView.animate(springDuration: 0.2, bounce: 0.3) {
+        focusTargetView.center = point
+        focusTargetView.transform = .identity
+      } completion: { finished in
+        if finished {
+          self.selectionFeedback.selectionChanged(at: point)
+          UIView.animate(springDuration: 0.4, bounce: 0.5) {
+            self.focusTargetView.transform = CGAffineTransformMakeScale(0.6, 0.6).concatenating(.init(rotationAngle: .pi))
+          }
         }
       }
+    } else {
+      focusTargetView.center = point
+      focusTargetView.transform = CGAffineTransformMakeScale(0.6, 0.6).concatenating(.init(rotationAngle: .pi))
+    }
   }
   
   private func showLongPressFeedback(at point: CGPoint) {
@@ -608,6 +611,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     guard let data = photo.fileDataRepresentation(),
           let fullImage = UIImage(data: data) else {
       if let error {
+        NSLog("Photo output did finish with \(error)")
         //        reportIssue(error)
       }
       return
