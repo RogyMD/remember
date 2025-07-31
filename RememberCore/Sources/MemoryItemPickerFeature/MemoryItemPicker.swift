@@ -15,6 +15,7 @@ public struct MemoryItemPicker {
     var shouldFocusItem: Bool = true
     var showsItems: Bool = true
     var isRecognizingText: Bool = false
+    var isBarsHidden: Bool = false
     public var recognizedText: RecognizedText?
     
     public init(imageURL: URL, image: Image, items: IdentifiedArrayOf<MemoryItem> = [], recognizedText: RecognizedText? = nil) {
@@ -66,6 +67,8 @@ public struct MemoryItemPicker {
         let item = MemoryItem(id: uuid().uuidString, name: textFrame.text, center: textFrame.frame.center)
         state.items.append(item)
         state.recognizedText?.textFrames.removeAll(where: { textFrame == $0 })
+        state.isBarsHidden = false
+        state.showsItems = true
         return .none
       case .recognizeTextButtonTapped:
         if state.isRecognizingText {
@@ -94,29 +97,34 @@ public struct MemoryItemPicker {
           await send(.binding(.set(\.focusedMemoryItem, id)))
         }
       case .tappedImage(let point):
-        let intersectsItem = state.items.first { (item: MemoryItem) in
-          var itemFrame = item.name.itemFrame(center: item.center)
-          itemFrame.size.width += 12
-          itemFrame.origin.y -= 12
-          itemFrame.size.height += 12
-          return itemFrame.contains(point)
-        }
-        let intersectsRecognizedText =
-        if let recognizedText = state.recognizedText {
-          recognizedText.textFrames.contains(where: { $0.frame.offsetBy(dx: .zero, dy: 88).contains(point) })
-        } else {
-          false
-        }
-        state.showsItems = true
-        if let intersectsItem {
-          return .send(.tappedItem(intersectsItem.id))
-        } else if intersectsRecognizedText == false {
-          let item = MemoryItem(id: UUID().uuidString, name: "", center: point)
-          state.items.append(item)
-          state.focusedMemoryItem = item.id
+        if state.showsItems == false {
+          state.isBarsHidden.toggle()
           return .none
         } else {
-          return .none
+          let intersectsItem = state.items.first { (item: MemoryItem) in
+            var itemFrame = item.name.itemFrame(center: item.center)
+            itemFrame.size.width += 12
+            itemFrame.origin.y -= 12
+            itemFrame.size.height += 12
+            return itemFrame.contains(point)
+          }
+          let intersectsRecognizedText =
+          if let recognizedText = state.recognizedText {
+            recognizedText.textFrames.contains(where: { $0.frame.offsetBy(dx: .zero, dy: 88).contains(point) })
+          } else {
+            false
+          }
+          state.showsItems = true
+          if let intersectsItem {
+            return .send(.tappedItem(intersectsItem.id))
+          } else if intersectsRecognizedText == false {
+            let item = MemoryItem(id: UUID().uuidString, name: "", center: point)
+            state.items.append(item)
+            state.focusedMemoryItem = item.id
+            return .none
+          } else {
+            return .none
+          }
         }
       case .deleteItemButtonTapped(let id):
         var items = state.items
@@ -210,7 +218,7 @@ public struct MemoryItemPickerView: View {
         )
         
       
-      if store.showsItems && isDragging == false {
+      if store.showsItems && isZooming == false {
         ForEach(store.items) { item in
           itemCell(for: item)
         }
@@ -224,8 +232,8 @@ public struct MemoryItemPickerView: View {
           } label: {
             if store.state.isRecognitionIntersectingOthers(textFrame) {
               Circle()
-                .fill(Color.green)
-                .stroke(Color.secondary, style: .init(lineWidth: 3))
+                .fill(Color(uiColor: .systemGreen))
+                .stroke(Color.white.opacity(0.5), style: .init(lineWidth: 3))
                 .frame(width: 12, height: 12)
                 .padding(12)
                 .contentShape(Circle())
@@ -264,10 +272,10 @@ public struct MemoryItemPickerView: View {
       store.send(.onAppear)
     }
     .onChange(of: magnification) { oldValue, newValue in
-      let showsItems = newValue == nil
-      if store.showsItems != showsItems {
-        store.send(.binding(.set(\.showsItems, showsItems)), animation: .linear)
-      }
+//      let isBarsHidden = newValue != nil
+//      if store.isBarsHidden != isBarsHidden {
+//        store.send(.binding(.set(\.isBarsHidden, isBarsHidden)), animation: .linear)
+//      }
       if let oldValue, newValue == nil {
         if oldValue < 0.7 {
           store.send(.zoomedOut, animation: .linear)
@@ -288,7 +296,7 @@ public struct MemoryItemPickerView: View {
     .navigationTitle(store.title)
     .navigationBarTitleDisplayMode(.inline)
     .toolbarBackgroundVisibility(.visible, for: .navigationBar, .bottomBar)
-    .toolbarVisibility((isZooming || isDragging) ? .hidden : .visible, for: .navigationBar, .bottomBar)
+    .toolbarVisibility(toolbarsHidden ? .hidden : .visible, for: .navigationBar, .bottomBar)
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
         Button("Cancel") {
@@ -357,6 +365,10 @@ public struct MemoryItemPickerView: View {
   }
   
   @State var keyboardFrame: CGRect = .zero
+  
+  var toolbarsHidden: Bool {
+    store.isBarsHidden || isZooming
+  }
   
   var isZooming: Bool {
     magnification != nil
