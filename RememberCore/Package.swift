@@ -20,6 +20,7 @@ let package = Package(
         .library(name: "SearchMemoryFeature", targets: ["SearchMemoryFeature"]),
         .library(name: "HomeFeature", targets: ["HomeFeature"]),
         .library(name: "SettingsFormFeature", targets: ["SettingsFormFeature"]),
+        .library(name: "BuyMeTeaFeature", targets: ["BuyMeTeaFeature"]),
 //        .library(name: "Localized", targets: ["Localized"]),
         
         // Clients
@@ -47,6 +48,17 @@ let package = Package(
               .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
 //              "CameraTimerRecognizer",
             ]),
+        .target(
+            name: "BuyMeTeaFeature",
+            dependencies: [
+              .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+            ],
+        ),
+//        .target(
+//            name: "AppStoreClient",
+//            dependencies: [
+//              .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+//            ]),
         .testTarget(
             name: "RememberCoreTests",
             dependencies: ["RememberCore"]
@@ -119,6 +131,7 @@ let package = Package(
             "RememberCore",
             "DatabaseClient",
             "FileClient",
+            "BuyMeTeaFeature",
           ]
         ),
         .target(

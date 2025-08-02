@@ -23,3 +23,8 @@ extension <#Example#>: TestDependencyKey {
 extension <#Example#>: DependencyKey {
   public static let liveValue: Self = Self(<#api#>: <#value#>)
 }
+
+let logger = Logger(
+    subsystem: "Remember.<#Example#>",
+    category: "Live"
+)

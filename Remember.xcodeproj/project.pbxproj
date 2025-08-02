@@ -11,9 +11,11 @@
 		C4405BE12DE4216300D0AE36 /* HomeFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C4405BE02DE4216300D0AE36 /* HomeFeature */; };
 		C469CDB82D94E06100DC583D /* MemoryTagsPickerFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C469CDB72D94E06100DC583D /* MemoryTagsPickerFeature */; };
 		C46EF3EE2D8E6F0300C23CA1 /* MemoryItemPickerFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C46EF3ED2D8E6F0300C23CA1 /* MemoryItemPickerFeature */; };
+		C4B617A02E3DAA0600943DC7 /* BuyMeTeaFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C4B6179F2E3DAA0600943DC7 /* BuyMeTeaFeature */; };
 		C4BE26DA2D98BE4200FED647 /* MemoryListFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C4BE26D92D98BE4200FED647 /* MemoryListFeature */; };
 		C4BE26DC2D9B545300FED647 /* CameraView in Frameworks */ = {isa = PBXBuildFile; productRef = C4BE26DB2D9B545300FED647 /* CameraView */; };
 		C4BE26E02DA166F500FED647 /* RememberCameraFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C4BE26DF2DA166F500FED647 /* RememberCameraFeature */; };
+		C4BE3C392E3D067800A3FF93 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4BE3C382E3D067800A3FF93 /* StoreKit.framework */; };
 		C4E042B92D90F5EA00674CBE /* MemoryFormFeature in Frameworks */ = {isa = PBXBuildFile; productRef = C4E042B82D90F5EA00674CBE /* MemoryFormFeature */; };
 /* End PBXBuildFile section */
 
@@ -36,6 +38,7 @@
 
 /* Begin PBXFileReference section */
 		C44E34172D870D45008EC3BF /* RememberCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RememberCore; sourceTree = "<group>"; };
+		C4BE3C382E3D067800A3FF93 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		C4F71BF32D84F11400F4CFC2 /* Remember.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Remember.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4F71C072D84F11600F4CFC2 /* RememberTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RememberTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4F71C112D84F11600F4CFC2 /* RememberUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RememberUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -46,6 +49,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Resources/Info.plist,
+				Resources/remember.storekit,
 			);
 			target = C4F71BF22D84F11400F4CFC2 /* Remember */;
 		};
@@ -77,8 +81,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4BE3C392E3D067800A3FF93 /* StoreKit.framework in Frameworks */,
 				C4BE26DA2D98BE4200FED647 /* MemoryListFeature in Frameworks */,
 				C4405BE12DE4216300D0AE36 /* HomeFeature in Frameworks */,
+				C4B617A02E3DAA0600943DC7 /* BuyMeTeaFeature in Frameworks */,
 				C40975342DEBC7CA003A08EB /* DatabaseClient in Frameworks */,
 				C4BE26E02DA166F500FED647 /* RememberCameraFeature in Frameworks */,
 				C469CDB82D94E06100DC583D /* MemoryTagsPickerFeature in Frameworks */,
@@ -108,6 +114,7 @@
 		C44E34432D87337E008EC3BF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C4BE3C382E3D067800A3FF93 /* StoreKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -162,6 +169,7 @@
 				C4BE26DF2DA166F500FED647 /* RememberCameraFeature */,
 				C4405BE02DE4216300D0AE36 /* HomeFeature */,
 				C40975332DEBC7CA003A08EB /* DatabaseClient */,
+				C4B6179F2E3DAA0600943DC7 /* BuyMeTeaFeature */,
 			);
 			productName = Remember;
 			productReference = C4F71BF32D84F11400F4CFC2 /* Remember.app */;
@@ -649,6 +657,10 @@
 		C46EF3ED2D8E6F0300C23CA1 /* MemoryItemPickerFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MemoryItemPickerFeature;
+		};
+		C4B6179F2E3DAA0600943DC7 /* BuyMeTeaFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BuyMeTeaFeature;
 		};
 		C4BE26D92D98BE4200FED647 /* MemoryListFeature */ = {
 			isa = XCSwiftPackageProductDependency;
