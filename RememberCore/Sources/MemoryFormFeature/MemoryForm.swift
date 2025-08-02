@@ -8,6 +8,7 @@ import LocationClient
 import IssueReporting
 import MemoryTagsPickerFeature
 import MapsAppURLClient
+import BuyMeTeaFeature
 
 @Reducer
 public struct MemoryForm: Sendable {
@@ -17,6 +18,7 @@ public struct MemoryForm: Sendable {
     public var isNew: Bool
     public var previewImage: Image
     public var memoryItemPicker: MemoryItemPicker.State?
+    public var buyMeTea: BuyMeTea.State
     @Presents var tagsPicker: MemoryTagsPicker.State?
     var locationInProgress: Bool = false
     var isDeleteConfirmationAlertShown = false
@@ -42,6 +44,7 @@ public struct MemoryForm: Sendable {
     case binding(BindingAction<State>)
     case memoryItemPicker(MemoryItemPicker.Action)
     case tagsPicker(PresentationAction<MemoryTagsPicker.Action>)
+    case buyMeTea(BuyMeTea.Action)
     case imageRowTapped
     case tagsRowTapped
     case locationRowTapped
@@ -54,6 +57,7 @@ public struct MemoryForm: Sendable {
     case deleteConfirmationAlertButtonTapped
     case openInMapsButtonTapped
     case removeLocationButtonTapped
+    case removeRecognizedTextButtonTapped
     case onAppear
   }
   
@@ -65,10 +69,16 @@ public struct MemoryForm: Sendable {
   
   public var body: some ReducerOf<Self> {
     BindingReducer()
+    Scope(state: \.buyMeTea, action: \.buyMeTea) {
+      BuyMeTea()
+    }
     Reduce {
       state,
       action in
       switch action {
+      case .removeRecognizedTextButtonTapped:
+        state.memory.recognizedText = nil
+        return .none
       case .removeLocationButtonTapped:
         state.memory.modified = now
         return .send(.binding(.set(\.memory.location, nil)))
@@ -120,7 +130,7 @@ public struct MemoryForm: Sendable {
         return tagsPickerAction(action, state: &state)
       case .memoryItemPicker(let action):
         return memoryItemPickerAction(action, state: &state)
-      case .binding, .tagsPicker, .deleteConfirmationAlertButtonTapped:
+      case .binding, .tagsPicker, .deleteConfirmationAlertButtonTapped, .buyMeTea:
         return .none
       }
     }
@@ -312,6 +322,26 @@ public struct MemoryFormView: View {
           TextEditor(text: $store.memory.notes)
             .padding(.vertical)
             .frame(minHeight: 100)
+        }
+        if let recognizedText = store.memory.recognizedText, recognizedText.isEmpty == false {
+          Section(header: Text("Text in Photo")) {
+            Button("Remove Found Text", systemImage: "text.viewFinder", role: .destructive) {
+              store.send(.removeRecognizedTextButtonTapped)
+            }
+            TextEditor(text: .init(
+              get: { recognizedText.text },
+              set: { newValue in store.memory.recognizedText?.text = newValue })
+            )
+            .padding(.vertical)
+            .frame(minHeight: 100)
+          }
+        }
+        if store.buyMeTea.isPurchased == false || store.buyMeTea.taskState == .loading {
+          Section("Support the App") {
+            BuyMeTeaView(store: store.scope(state: \.buyMeTea, action: \.buyMeTea))
+              .padding(8)
+              .listRowBackground(Color.clear.background(.thinMaterial))
+          }
         }
       }
       .scrollDismissesKeyboard(.interactively)

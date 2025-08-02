@@ -88,6 +88,7 @@ let package = Package(
             "LocationClient",
             "MemoryTagsPickerFeature",
             "MapsAppURLClient",
+            "BuyMeTeaFeature",
           ]
         ),
         .target(

@@ -19,7 +19,12 @@ public struct MemoryItemPicker {
     public var recognizedText: RecognizedText?
     var displayTextFrames: [TextFrame]?
     
-    public init(imageURL: URL, image: Image, items: IdentifiedArrayOf<MemoryItem> = [], recognizedText: RecognizedText? = nil) {
+    public init(
+      imageURL: URL,
+      image: Image,
+      items: IdentifiedArrayOf<MemoryItem> = [],
+      recognizedText: RecognizedText? = nil
+    ) {
       self.imageURL = imageURL
       self.image = image
       self.items = items
@@ -231,7 +236,7 @@ public struct MemoryItemPickerView: View {
         }
       }
       
-      if store.showsRecognizedText, let textFrames = store.displayTextFrames {
+      if store.showsRecognizedText, let textFrames = store.displayTextFrames, isZooming == false {
         ForEach(textFrames) { textFrame in
           Button {
             store.send(.recognizedTextTapped(textFrame), animation: .bouncy)
@@ -276,10 +281,6 @@ public struct MemoryItemPickerView: View {
       store.send(.onAppear)
     }
     .onChange(of: magnification) { oldValue, newValue in
-//      let isBarsHidden = newValue != nil
-//      if store.isBarsHidden != isBarsHidden {
-//        store.send(.binding(.set(\.isBarsHidden, isBarsHidden)), animation: .linear)
-//      }
       if let oldValue, newValue == nil {
         if oldValue < 0.7 {
           store.send(.zoomedOut, animation: .linear)
@@ -334,9 +335,7 @@ public struct MemoryItemPickerView: View {
           
           Spacer()
           
-          if store.showsRecognizeTextButton {
-            textScanButton
-          }
+          textScanButton
         }
       }
     }
@@ -348,9 +347,10 @@ public struct MemoryItemPickerView: View {
       store.send(.recognizeTextButtonTapped, animation: .linear)
     } label: {
       ZStack {
-        Image(systemName: "text.viewfinder")
+        Image(systemName: store.recognizedText?.isEmpty == true ? "text.page.slash.fill" : "text.viewfinder")
           .resizable()
           .aspectRatio(contentMode: .fit)
+          .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
           .padding(10)
           .when(
             store.showsRecognizedText,
@@ -367,7 +367,7 @@ public struct MemoryItemPickerView: View {
         }
       }
     }
-    .disabled(store.isTextRecognitionInProgress)
+    .disabled(store.disabledTextScanButton)
   }
   
   @State var keyboardFrame: CGRect = .zero
@@ -422,8 +422,8 @@ extension MemoryItemPicker.State {
     let name = items.map(\.name).joined(separator: ", ")
     return name.isEmpty ? "Label items" : name
   }
-  var showsRecognizeTextButton: Bool {
-    recognizedText?.isEmpty != true
+  var disabledTextScanButton: Bool {
+    isTextRecognitionInProgress || recognizedText?.isEmpty == true
   }
   var isTextRecognitionInProgress: Bool {
     showsRecognizedText && recognizedText == nil
