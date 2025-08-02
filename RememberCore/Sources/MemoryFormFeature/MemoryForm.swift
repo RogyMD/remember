@@ -325,8 +325,8 @@ public struct MemoryFormView: View {
             .frame(minHeight: 100)
         }
         if let recognizedText = store.memory.recognizedText, recognizedText.isEmpty == false {
-          Section(header: Text("Text in Photo")) {
-            Button("Remove Found Text in Photo", systemImage: "text.viewfinder", role: .destructive) {
+          Section(header: Text("Detected Text in Photo")) {
+            Button("Remove Detected Text", systemImage: "text.viewfinder", role: .destructive) {
               store.send(.removeRecognizedTextButtonTapped)
             }
             .foregroundStyle(.red)
@@ -334,10 +334,11 @@ public struct MemoryFormView: View {
               get: { recognizedText.text },
               set: { newValue in store.memory.recognizedText?.text = newValue })
             )
+            .frame(minHeight: 50)
             .padding(.vertical)
           }
         }
-        if store.buyMeTea.isPurchased == false || store.buyMeTea.taskState == .loading {
+        if store.buyMeTea.isPurchased == false {
           Section("Support the App") {
             BuyMeTeaView(store: store.scope(state: \.buyMeTea, action: \.buyMeTea))
               .padding(8)
