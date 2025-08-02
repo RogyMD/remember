@@ -32,6 +32,7 @@ let package = Package(
         .library(name: "SharingKeys", targets: ["SharingKeys"]),
         .library(name: "FileClient", targets: ["FileClient"]),
         .library(name: "TextRecognizerClient", targets: ["TextRecognizerClient"]),
+        .library(name: "FeedbackGenerator", targets: ["FeedbackGenerator"]),
     ],
     dependencies: [
       .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
@@ -86,6 +87,7 @@ let package = Package(
             "RememberCore",
             "TextRecognizerClient",
             "RememberSharedKeys",
+            "FeedbackGenerator",
           ]
         ),
         .target(
@@ -200,6 +202,12 @@ let package = Package(
         ),
         .target(
           name: "TextRecognizerClient",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+          ]
+        ),
+        .target(
+          name: "FeedbackGenerator",
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
           ]

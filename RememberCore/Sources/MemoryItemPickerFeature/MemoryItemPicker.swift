@@ -4,6 +4,7 @@ import SwiftUI
 import ZoomableImage
 import TextRecognizerClient
 import RememberSharedKeys
+import FeedbackGenerator
 
 @Reducer
 public struct MemoryItemPicker {
@@ -71,6 +72,7 @@ public struct MemoryItemPicker {
   
   @Dependency(\.textRecognizer) var textRecognizer
   @Dependency(\.uuid) var uuid
+  @Dependency(\.feedbackGenerator) var feedbackGenerator
   
   public var body: some ReducerOf<Self> {
     BindingReducer()
@@ -82,7 +84,9 @@ public struct MemoryItemPicker {
         state.displayTextFrames?.removeAll(where: { textFrame == $0 })
         state.isBarsHidden = false
         state.showsItems = true
-        return .none
+        return .run { [feedbackGenerator] _ in
+          await feedbackGenerator.generate(.impact(.medium, 0.5)).run()
+        }
       case .recognizeTextButtonTapped:
         if state.showsRecognizedText {
           state.showsRecognizedText = false
@@ -90,10 +94,11 @@ public struct MemoryItemPicker {
           return .none
         } else {
           state.showsRecognizedText = true
-          if let recognizedText = state.recognizedText {
-            return .send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
-          } else {
-            return .run { [imageURL = state.imageURL, textRecognizer, uuid] send in
+          return .run { [recognizedText = state.recognizedText, imageURL = state.imageURL, textRecognizer, uuid, feedbackGenerator] send in
+            if let recognizedText {
+              await send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
+              await feedbackGenerator.generate(.impact(.soft, 0.5)).run()
+            } else {
               guard let data = try? Data(contentsOf: imageURL),
                     let image = UIImage(data: data),
                     let result = try? await textRecognizer.recognizeTextInImage(image)
@@ -104,8 +109,10 @@ public struct MemoryItemPicker {
               let recognizedText = RecognizedText(uuid: { uuid().uuidString }, result: result)
               await send(.set(\.recognizedText, recognizedText))
               await send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
+              await feedbackGenerator.generate(.impact(.soft, 0.5)).run()
             }
           }
+          
         }
       case .labelVisibilityButtonTapped:
         state.showsItems.toggle()
@@ -245,7 +252,7 @@ public struct MemoryItemPickerView: View {
               state = value
             })
         )
-        
+      
       
       if store.showsItems && isZooming == false {
         ForEach(store.items) { item in
@@ -280,20 +287,20 @@ public struct MemoryItemPickerView: View {
       }
     }
     .ignoresSafeArea()
-//    .offset(offset)
-//    .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
-//    .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
-//    .animation(.easeOut, value: isDismissable)
-//    .gesture(DragGesture(minimumDistance: 0)
-//      .updating($dragValue, body: { value, state, _ in
-//        state = value
-//      }))
-//    .simultaneousGesture(
-//      DragGesture(minimumDistance: .zero)
-//        .updating($dragValue, body: { value, state, _ in
-//          state = value
-//        })
-//    )
+    //    .offset(offset)
+    //    .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
+    //    .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
+    //    .animation(.easeOut, value: isDismissable)
+    //    .gesture(DragGesture(minimumDistance: 0)
+    //      .updating($dragValue, body: { value, state, _ in
+    //        state = value
+    //      }))
+    //    .simultaneousGesture(
+    //      DragGesture(minimumDistance: .zero)
+    //        .updating($dragValue, body: { value, state, _ in
+    //          state = value
+    //        })
+    //    )
     .onAppear {
       store.send(.onAppear)
     }
