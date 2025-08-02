@@ -32,8 +32,12 @@ public struct BuyMeTea {
       Reduce { state, action in
         switch action {
         case .productStateChaged(let taskState):
-          state.taskState = taskState
           return .run { send in
+            defer {
+              DispatchQueue.main.async {
+                send(.set(\.taskState, taskState), animation: .bouncy(extraBounce: 0.3))
+              }
+            }
             guard let product = taskState.product else {
               await send(.set(\.isPurchased, false))
               return
