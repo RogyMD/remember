@@ -94,9 +94,13 @@ public struct MemoryItemPicker {
             return .send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
           } else {
             return .run { [imageURL = state.imageURL, textRecognizer, uuid] send in
-              let data = try Data(contentsOf: imageURL)
-              let image = UIImage(data: data) ?? UIImage()
-              let result = try await textRecognizer.recognizeTextInImage(image)
+              guard let data = try? Data(contentsOf: imageURL),
+                    let image = UIImage(data: data),
+                    let result = try? await textRecognizer.recognizeTextInImage(image)
+              else {
+                await send(.set(\.showsRecognizedText, false))
+                return
+              }
               let recognizedText = RecognizedText(uuid: { uuid().uuidString }, result: result)
               await send(.set(\.recognizedText, recognizedText))
               await send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
