@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         .library(name: "RememberCore", targets: ["RememberCore"]),
+        .library(name: "RememberSharedKeys", targets: ["RememberSharedKeys"]),
         // Features
         .library(name: "CameraView", targets: ["CameraView"]),
         .library(name: "MemoryItemPickerFeature", targets: ["MemoryItemPickerFeature"]),
@@ -48,10 +49,17 @@ let package = Package(
               .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
 //              "CameraTimerRecognizer",
             ]),
+          .target(
+            name: "RememberSharedKeys",
+            dependencies: [
+              .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+//              "CameraTimerRecognizer",
+            ]),
         .target(
             name: "BuyMeTeaFeature",
             dependencies: [
               .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+              "RememberSharedKeys",
             ],
         ),
 //        .target(
@@ -77,6 +85,7 @@ let package = Package(
             .product(name: "ZoomableImage", package: "ZoomableImage"),
             "RememberCore",
             "TextRecognizerClient",
+            "RememberSharedKeys",
           ]
         ),
         .target(

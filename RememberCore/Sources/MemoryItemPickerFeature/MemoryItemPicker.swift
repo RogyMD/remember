@@ -3,6 +3,7 @@ import RememberCore
 import SwiftUI
 import ZoomableImage
 import TextRecognizerClient
+import RememberSharedKeys
 
 @Reducer
 public struct MemoryItemPicker {
@@ -18,16 +19,20 @@ public struct MemoryItemPicker {
     var isBarsHidden: Bool = false
     public var recognizedText: RecognizedText?
     var displayTextFrames: [TextFrame]?
+    @Shared(.isAutoTextDetectionEnabled) var isAutoTextDetectionEnabled
+    var isNew: Bool
     
     public init(
       imageURL: URL,
       image: Image,
       items: IdentifiedArrayOf<MemoryItem> = [],
-      recognizedText: RecognizedText? = nil
+      recognizedText: RecognizedText? = nil,
+      isNew: Bool
     ) {
       self.imageURL = imageURL
       self.image = image
       self.items = items
+      self.isNew = isNew
       self.recognizedText = recognizedText
       self.shouldFocusItem = items.count == 1 && items.first?.name.isEmpty == true && recognizedText == nil
     }
@@ -40,7 +45,8 @@ public struct MemoryItemPicker {
           id: UUID().uuidString,
           name: "lele",
           center: .init(x: 100, y: 100)
-        )]
+        )],
+        isNew: false
       )
     }
   }
@@ -101,12 +107,19 @@ public struct MemoryItemPicker {
         state.showsItems.toggle()
         return .none
       case .onAppear:
-        guard state.shouldFocusItem else { return .none }
-        state.shouldFocusItem = false
-        let id = state.items.first?.id
-        return .run { send in
-          try await Task.sleep(for: .milliseconds(300))
-          await send(.binding(.set(\.focusedMemoryItem, id)))
+        if state.isAutoTextDetectionEnabled && state.isNew {
+          state.isNew = false
+          state.shouldFocusItem = false
+          return .send(.recognizeTextButtonTapped)
+        } else if state.shouldFocusItem {
+          state.shouldFocusItem = false
+          let id = state.items.first?.id
+          return .run { send in
+            try await Task.sleep(for: .milliseconds(300))
+            await send(.binding(.set(\.focusedMemoryItem, id)))
+          }
+        } else {
+          return .none
         }
       case .tappedImage(let point):
         if state.showsItems == false {

@@ -18,7 +18,7 @@ public struct MemoryForm: Sendable {
     public var isNew: Bool
     public var previewImage: Image
     public var memoryItemPicker: MemoryItemPicker.State?
-    public var buyMeTea: BuyMeTea.State
+    public var buyMeTea: BuyMeTea.State = .init()
     @Presents var tagsPicker: MemoryTagsPicker.State?
     var locationInProgress: Bool = false
     var isDeleteConfirmationAlertShown = false
@@ -78,6 +78,7 @@ public struct MemoryForm: Sendable {
       switch action {
       case .removeRecognizedTextButtonTapped:
         state.memory.recognizedText = nil
+        state.memory.modified = now
         return .none
       case .removeLocationButtonTapped:
         state.memory.modified = now
@@ -97,13 +98,13 @@ public struct MemoryForm: Sendable {
         return .none
       case .onAppear:
         if state.isNew {
-          state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText)
+          state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText, isNew: true)
         }
         return .none
       case .doneButtonTapped, .cancelButtonTapped, .forgetButtonTapped:
         return .none
       case .imageRowTapped:
-        state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText)
+        state.memoryItemPicker = .init(imageURL: state.memory.previewImageURL, image: state.previewImage, items: state.memory.items, recognizedText: state.memory.recognizedText, isNew: false)
         return .none
       case .tagsRowTapped:
         state.tagsPicker = .init(selectedTags: Set(state.memory.tags.ids))
@@ -325,15 +326,15 @@ public struct MemoryFormView: View {
         }
         if let recognizedText = store.memory.recognizedText, recognizedText.isEmpty == false {
           Section(header: Text("Text in Photo")) {
-            Button("Remove Found Text", systemImage: "text.viewFinder", role: .destructive) {
+            Button("Remove Found Text in Photo", systemImage: "text.viewfinder", role: .destructive) {
               store.send(.removeRecognizedTextButtonTapped)
             }
+            .foregroundStyle(.red)
             TextEditor(text: .init(
               get: { recognizedText.text },
               set: { newValue in store.memory.recognizedText?.text = newValue })
             )
             .padding(.vertical)
-            .frame(minHeight: 100)
           }
         }
         if store.buyMeTea.isPurchased == false || store.buyMeTea.taskState == .loading {
@@ -416,6 +417,9 @@ public struct MemoryFormView: View {
         .foregroundStyle(.red)
       } else {
         Button("Cancel", role: .cancel) {
+          store.send(.cancelButtonTapped, animation: .linear)
+        }
+        .accessibilityAction(.escape) {
           store.send(.cancelButtonTapped, animation: .linear)
         }
       }
