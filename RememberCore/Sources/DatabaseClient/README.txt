@@ -1,6 +1,6 @@
-📂 README – Remember App Files
+📂 README – HippoCam App Files
 
-This file explains how the Remember app stores your memories and how you can safely back them up or restore them if needed.
+This file explains how the HippoCam app stores your memories and how you can safely back them up or restore them if needed.
 
 ⚠️ Please do not manually edit or rename files or folders in this directory.
 Doing so may cause the app to stop working properly or lose saved memories.
@@ -33,8 +33,8 @@ Inside each memory folder:
   - creation date
   - unique ID
 
-More info at: https://rogy.app/remember
+More info at: https://rogy.app/hippocam
 
-Thanks for using Remember!  
+Thanks for using HippoCam!  
 With love,  
 Igor

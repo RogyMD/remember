@@ -103,7 +103,7 @@ public struct SettingsFormView: View {
       }
       
       Link(destination: URL(string: UIApplication.openSettingsURLString)!) {
-        Label("Open Remember Settings", systemImage: "gear")
+        Label("Open HippoCam Settings", systemImage: "gear")
       }
       .listRowBackground(Color.clear.background(.thinMaterial))
       
@@ -117,7 +117,7 @@ public struct SettingsFormView: View {
         .disabled(store.isSyncing)
       }
       
-      Section("🫶 Thank You for Using Remember") {
+      Section("🫶 Thank You for Using HippoCam") {
         Link(destination: AppConfig.helpURL) {
           Label("Get Started", systemImage: "graduationcap.fill")
             .foregroundStyle(Color(uiColor: .systemGreen))
@@ -130,8 +130,8 @@ public struct SettingsFormView: View {
         
         ShareLink(
           item: AppConfig.appStoreURL,
-          subject: Text("Download Remember on the App Store"),
-          message: Text("Here’s the link to download Remember, the Brain Add-On I was telling you about!")
+          subject: Text("Download HippoCam on the App Store"),
+          message: Text("Here’s the link to download HippoCam, the app I was telling you about!")
         ) {
           Label("Spread the Word", systemImage: "megaphone.fill")
             .symbolRenderingMode(.multicolor)
