@@ -94,6 +94,6 @@ public struct RecognizedText: Equatable, Sendable {
     self.textFrames = textFrames
   }
   public var isEmpty: Bool {
-    text.isEmpty
+    textFrames.isEmpty
   }
 }

@@ -11,6 +11,7 @@ struct MemoryFile: Equatable, Codable {
   var tags: [String]?
   var location: [String: Double]?
   var notes: String?
+  var detectedTextInPhoto: String?
   init(memory: Memory) {
     id = memory.id
     created = Self.dateFormatter.string(from: memory.created)
@@ -20,6 +21,7 @@ struct MemoryFile: Equatable, Codable {
     location = memory.location.map({ location in
       ["latitude": location.lat, "longitude": location.long]
     })
+    detectedTextInPhoto = memory.recognizedText?.text
   }
   static let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()

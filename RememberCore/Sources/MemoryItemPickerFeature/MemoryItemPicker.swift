@@ -3,6 +3,8 @@ import RememberCore
 import SwiftUI
 import ZoomableImage
 import TextRecognizerClient
+import RememberSharedKeys
+import FeedbackGenerator
 
 @Reducer
 public struct MemoryItemPicker {
@@ -18,11 +20,20 @@ public struct MemoryItemPicker {
     var isBarsHidden: Bool = false
     public var recognizedText: RecognizedText?
     var displayTextFrames: [TextFrame]?
+    @Shared(.isAutoTextDetectionEnabled) var isAutoTextDetectionEnabled
+    var isNew: Bool
     
-    public init(imageURL: URL, image: Image, items: IdentifiedArrayOf<MemoryItem> = [], recognizedText: RecognizedText? = nil) {
+    public init(
+      imageURL: URL,
+      image: Image,
+      items: IdentifiedArrayOf<MemoryItem> = [],
+      recognizedText: RecognizedText? = nil,
+      isNew: Bool
+    ) {
       self.imageURL = imageURL
       self.image = image
       self.items = items
+      self.isNew = isNew
       self.recognizedText = recognizedText
       self.shouldFocusItem = items.count == 1 && items.first?.name.isEmpty == true && recognizedText == nil
     }
@@ -35,7 +46,8 @@ public struct MemoryItemPicker {
           id: UUID().uuidString,
           name: "lele",
           center: .init(x: 100, y: 100)
-        )]
+        )],
+        isNew: false
       )
     }
   }
@@ -60,6 +72,7 @@ public struct MemoryItemPicker {
   
   @Dependency(\.textRecognizer) var textRecognizer
   @Dependency(\.uuid) var uuid
+  @Dependency(\.feedbackGenerator) var feedbackGenerator
   
   public var body: some ReducerOf<Self> {
     BindingReducer()
@@ -71,7 +84,9 @@ public struct MemoryItemPicker {
         state.displayTextFrames?.removeAll(where: { textFrame == $0 })
         state.isBarsHidden = false
         state.showsItems = true
-        return .none
+        return .run { [feedbackGenerator] _ in
+          await feedbackGenerator.generate(.impact(.medium, 0.5)).run()
+        }
       case .recognizeTextButtonTapped:
         if state.showsRecognizedText {
           state.showsRecognizedText = false
@@ -79,29 +94,43 @@ public struct MemoryItemPicker {
           return .none
         } else {
           state.showsRecognizedText = true
-          if let recognizedText = state.recognizedText {
-            return .send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
-          } else {
-            return .run { [imageURL = state.imageURL, textRecognizer, uuid] send in
-              let data = try Data(contentsOf: imageURL)
-              let image = UIImage(data: data) ?? UIImage()
-              let result = try await textRecognizer.recognizeTextInImage(image)
+          return .run { [recognizedText = state.recognizedText, imageURL = state.imageURL, textRecognizer, uuid, feedbackGenerator] send in
+            if let recognizedText {
+              await send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
+              await feedbackGenerator.generate(.impact(.soft, 0.5)).run()
+            } else {
+              guard let data = try? Data(contentsOf: imageURL),
+                    let image = UIImage(data: data),
+                    let result = try? await textRecognizer.recognizeTextInImage(image)
+              else {
+                await send(.set(\.showsRecognizedText, false))
+                return
+              }
               let recognizedText = RecognizedText(uuid: { uuid().uuidString }, result: result)
               await send(.set(\.recognizedText, recognizedText))
               await send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
+              await feedbackGenerator.generate(.impact(.soft, 0.5)).run()
             }
           }
+          
         }
       case .labelVisibilityButtonTapped:
         state.showsItems.toggle()
         return .none
       case .onAppear:
-        guard state.shouldFocusItem else { return .none }
-        state.shouldFocusItem = false
-        let id = state.items.first?.id
-        return .run { send in
-          try await Task.sleep(for: .milliseconds(300))
-          await send(.binding(.set(\.focusedMemoryItem, id)))
+        if state.isAutoTextDetectionEnabled && state.isNew {
+          state.isNew = false
+          state.shouldFocusItem = false
+          return .send(.recognizeTextButtonTapped)
+        } else if state.shouldFocusItem {
+          state.shouldFocusItem = false
+          let id = state.items.first?.id
+          return .run { send in
+            try await Task.sleep(for: .milliseconds(300))
+            await send(.binding(.set(\.focusedMemoryItem, id)))
+          }
+        } else {
+          return .none
         }
       case .tappedImage(let point):
         if state.showsItems == false {
@@ -223,7 +252,7 @@ public struct MemoryItemPickerView: View {
               state = value
             })
         )
-        
+      
       
       if store.showsItems && isZooming == false {
         ForEach(store.items) { item in
@@ -231,7 +260,7 @@ public struct MemoryItemPickerView: View {
         }
       }
       
-      if store.showsRecognizedText, let textFrames = store.displayTextFrames {
+      if store.showsRecognizedText, let textFrames = store.displayTextFrames, isZooming == false {
         ForEach(textFrames) { textFrame in
           Button {
             store.send(.recognizedTextTapped(textFrame), animation: .bouncy)
@@ -258,28 +287,24 @@ public struct MemoryItemPickerView: View {
       }
     }
     .ignoresSafeArea()
-//    .offset(offset)
-//    .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
-//    .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
-//    .animation(.easeOut, value: isDismissable)
-//    .gesture(DragGesture(minimumDistance: 0)
-//      .updating($dragValue, body: { value, state, _ in
-//        state = value
-//      }))
-//    .simultaneousGesture(
-//      DragGesture(minimumDistance: .zero)
-//        .updating($dragValue, body: { value, state, _ in
-//          state = value
-//        })
-//    )
+    //    .offset(offset)
+    //    .scaleEffect(isDismissable ? 0.9 : 1.0, anchor: .center)
+    //    .animation(.bouncy(duration: 0.25, extraBounce: 0.1), value: offset)
+    //    .animation(.easeOut, value: isDismissable)
+    //    .gesture(DragGesture(minimumDistance: 0)
+    //      .updating($dragValue, body: { value, state, _ in
+    //        state = value
+    //      }))
+    //    .simultaneousGesture(
+    //      DragGesture(minimumDistance: .zero)
+    //        .updating($dragValue, body: { value, state, _ in
+    //          state = value
+    //        })
+    //    )
     .onAppear {
       store.send(.onAppear)
     }
     .onChange(of: magnification) { oldValue, newValue in
-//      let isBarsHidden = newValue != nil
-//      if store.isBarsHidden != isBarsHidden {
-//        store.send(.binding(.set(\.isBarsHidden, isBarsHidden)), animation: .linear)
-//      }
       if let oldValue, newValue == nil {
         if oldValue < 0.7 {
           store.send(.zoomedOut, animation: .linear)
@@ -334,9 +359,7 @@ public struct MemoryItemPickerView: View {
           
           Spacer()
           
-          if store.showsRecognizeTextButton {
-            textScanButton
-          }
+          textScanButton
         }
       }
     }
@@ -348,9 +371,10 @@ public struct MemoryItemPickerView: View {
       store.send(.recognizeTextButtonTapped, animation: .linear)
     } label: {
       ZStack {
-        Image(systemName: "text.viewfinder")
+        Image(systemName: store.recognizedText?.isEmpty == true ? "text.page.slash.fill" : "text.viewfinder")
           .resizable()
           .aspectRatio(contentMode: .fit)
+          .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
           .padding(10)
           .when(
             store.showsRecognizedText,
@@ -367,7 +391,7 @@ public struct MemoryItemPickerView: View {
         }
       }
     }
-    .disabled(store.isTextRecognitionInProgress)
+    .disabled(store.disabledTextScanButton)
   }
   
   @State var keyboardFrame: CGRect = .zero
@@ -422,8 +446,8 @@ extension MemoryItemPicker.State {
     let name = items.map(\.name).joined(separator: ", ")
     return name.isEmpty ? "Label items" : name
   }
-  var showsRecognizeTextButton: Bool {
-    recognizedText?.isEmpty != true
+  var disabledTextScanButton: Bool {
+    isTextRecognitionInProgress || recognizedText?.isEmpty == true
   }
   var isTextRecognitionInProgress: Bool {
     showsRecognizedText && recognizedText == nil
