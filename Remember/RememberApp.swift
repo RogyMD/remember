@@ -2,6 +2,7 @@ import SwiftUI
 import HomeFeature
 import ComposableArchitecture
 import DatabaseClient
+import BuyMeTeaFeature
 
 @main
 struct RememberApp: App {
@@ -14,6 +15,12 @@ struct RememberApp: App {
   
   var body: some Scene {
     WindowGroup {
+//      BuyMeTeaView(
+//        store: Store(
+//          initialState: .preview,
+//          reducer: { BuyMeTea() }
+//        )
+//      )
       HomeView(store: store)
         .task {
           await database.configure()

@@ -298,7 +298,7 @@ public struct MemoryListView: View {
               Image(systemName: "mappin.and.ellipse")
               Text("Location")
             }
-            .font(.caption2)
+            .font(.caption2.monospaced())
             .foregroundStyle(.secondary)
           }
           
@@ -306,7 +306,7 @@ public struct MemoryListView: View {
             Image(systemName: "camera")
             Text(memory.created.displayTime)
           }
-          .font(.caption2)
+          .font(.caption2.monospaced())
           .foregroundStyle(.secondary)
           
           if let notes = memory.notes.nonEmpty?.prefix(150) {
@@ -316,19 +316,19 @@ public struct MemoryListView: View {
               Text(notes)
                 .lineLimit(1)
             }
-            .font(.caption2)
+            .font(.caption2.monospaced())
             .italic()
             .bold()
             .foregroundStyle(.tertiary)
           }
-          if let text = memory.recognizedText?.text {
+          if let text = memory.recognizedText?.text.nonEmpty {
             HStack {
               Image(systemName: "text.viewfinder")
               
               Text(text)
                 .lineLimit(1)
             }
-            .font(.caption2)
+            .font(.caption2.monospaced())
             .italic()
             .bold()
             .foregroundStyle(.tertiary)

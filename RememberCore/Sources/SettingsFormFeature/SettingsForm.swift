@@ -3,6 +3,7 @@ import RememberCore
 import SwiftUI
 import DatabaseClient
 import FileClient
+import BuyMeTeaFeature
 
 @Reducer
 public struct SettingsForm {
@@ -10,12 +11,14 @@ public struct SettingsForm {
   public struct State: Equatable {
     var syncResult: DatabaseClient.SyncResult?
     var isSyncing: Bool = false
+    var buyMeTea: BuyMeTea.State = .init()
     public init() {}
   }
   
   @CasePathable
   public enum Action: Equatable, BindableAction {
     case binding(BindingAction<State>)
+    case buyMeTea(BuyMeTea.Action)
     case writeReviewRowTapped
     case learnMoreRowTapped
     case closeButtonTapped
@@ -36,6 +39,10 @@ public struct SettingsForm {
   
   public var body: some ReducerOf<Self> {
     BindingReducer()
+    
+    Scope(state: \.buyMeTea, action: \.buyMeTea) {
+      BuyMeTea()
+    }
     
     Reduce { state, action in
       switch action {
@@ -68,7 +75,7 @@ public struct SettingsForm {
             try await database.deleteMemory(memoryId)
           }
         }
-      case .binding:
+      case .binding, .buyMeTea:
         return .none
       }
     }
@@ -87,6 +94,14 @@ public struct SettingsFormView: View {
   
   public var body: some View {
     Form {
+      if store.displayBuyMeTeaOnTop {
+        Section("Support the App") {
+          BuyMeTeaView(store: store.scope(state: \.buyMeTea, action: \.buyMeTea))
+            .padding(8)
+            .listRowBackground(Color.clear.background(.thinMaterial))
+        }
+      }
+      
       Link(destination: URL(string: UIApplication.openSettingsURLString)!) {
         Label("Open Remember Settings", systemImage: "gear")
       }
@@ -98,6 +113,7 @@ public struct SettingsFormView: View {
         } label: {
           Label("Sync File System", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
         }
+        .listRowBackground(Color.clear.background(.thinMaterial))
         .disabled(store.isSyncing)
       }
       
@@ -127,6 +143,15 @@ public struct SettingsFormView: View {
         }
       }
       .listRowBackground(Color.clear.background(.thinMaterial))
+      
+      if store.displayBuyMeTeaOnBottom {
+        Section("Tea Purchased") {
+          BuyMeTeaView(
+            store: store.scope(state: \.buyMeTea, action: \.buyMeTea)
+          )
+          .listRowBackground(Color.clear.background(.thinMaterial))
+        }
+      }
     }
     .alert(
       item: $store.syncResult,
@@ -152,6 +177,15 @@ public struct SettingsFormView: View {
         }
       }
     }
+  }
+}
+
+extension SettingsForm.State {
+  var displayBuyMeTeaOnTop: Bool {
+    buyMeTea.isPurchased == false && buyMeTea.taskState != .failed
+  }
+  var displayBuyMeTeaOnBottom: Bool {
+    buyMeTea.isPurchased
   }
 }
 

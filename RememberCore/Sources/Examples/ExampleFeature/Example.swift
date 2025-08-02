@@ -78,6 +78,11 @@ public struct ExampleView: View {
 //  }
 //}
 
+private let logger = Logger(
+    subsystem: "Remember",
+    category: "Example"
+)
+
 #if DEBUG
 
 // MARK: Previews
