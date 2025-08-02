@@ -3,16 +3,21 @@ import SwiftUI
 import StoreKit
 import OSLog
 import UIKit
+import RememberSharedKeys
 
 @Reducer
 public struct BuyMeTea {
   @ObservableState
   public struct State: Equatable {
+    @Shared(.isTeaPurchased) var isTeaPurchased
     public var isPurchased: Bool = false
     public var taskState: ProductTaskState
     public init(isPurchased: Bool = false, taskState: ProductTaskState = .loading) {
       self.isPurchased = isPurchased
       self.taskState = taskState
+      if isTeaPurchased {
+        self.isPurchased = true
+      }
     }
   }
   
@@ -32,7 +37,7 @@ public struct BuyMeTea {
       Reduce { state, action in
         switch action {
         case .productStateChaged(let taskState):
-          return .run { send in
+          return .run { [isTeaPurchased = state.$isTeaPurchased] send in
             defer {
               DispatchQueue.main.async {
                 send(.set(\.taskState, taskState), animation: .bouncy(extraBounce: 0.3))
@@ -51,13 +56,18 @@ public struct BuyMeTea {
               logger.fault("Verification Failed. Error: \(String(describing: verificationError))")
               await send(.set(\.isPurchased, false))
             case .verified:
+              isTeaPurchased.withLock { $0 = true }
               await send(.set(\.isPurchased, true), animation: .bouncy(extraBounce: 0.3))
             }
           }
         case .binding, .onAppear, .inAppPurchaseStarted:
           return .none
         case .inAppPurchaseCompleted(_, let result):
-          return .send(.set(\.isPurchased, result == .succes), animation: .bouncy(extraBounce: 0.3))
+          let isPurchased = result == .succes
+          return .run { [isTeaPurchased = state.$isTeaPurchased] send in
+            isTeaPurchased.withLock { $0 = isPurchased }
+            await send(.set(\.isPurchased, isPurchased), animation: .bouncy(extraBounce: 0.3))
+          }
         }
       }
     }

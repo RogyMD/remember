@@ -145,7 +145,7 @@ public struct SettingsFormView: View {
       .listRowBackground(Color.clear.background(.thinMaterial))
       
       if store.displayBuyMeTeaOnBottom {
-        Section(store.buyMeTea.taskState == .loading ? "Loading" : "Tea Purchased") {
+        Section(store.isLoadingTea ? "Loading" : "Tea Purchased") {
           BuyMeTeaView(
             store: store.scope(state: \.buyMeTea, action: \.buyMeTea)
           )
@@ -186,6 +186,9 @@ extension SettingsForm.State {
   }
   var displayBuyMeTeaOnBottom: Bool {
     buyMeTea.isPurchased || buyMeTea.taskState == .loading
+  }
+  var isLoadingTea: Bool {
+    buyMeTea.taskState == .loading && buyMeTea.isPurchased == false
   }
 }
 
