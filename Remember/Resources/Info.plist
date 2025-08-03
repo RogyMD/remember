@@ -2,54 +2,54 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>UIFileSharingEnabled</key>
-  <true/>
-  <key>LSSupportsOpeningDocumentsInPlace</key>
-  <true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSLocationDefaultAccuracyReduced</key>
 	<false/>
-  <key>UTImportedTypeDeclarations</key>
-  <array>
-    <dict>
-      <key>UTTypeIdentifier</key>
-      <string>public.jpeg</string>
-      <key>UTTypeConformsTo</key>
-      <array>
-        <string>public.image</string>
-      </array>
-      <key>UTTypeDescription</key>
-      <string>JPEG image</string>
-      <key>UTTypeTagSpecification</key>
-      <dict>
-        <key>public.filename-extension</key>
-        <array>
-          <string>jpeg</string>
-          <string>jpg</string>
-        </array>
-        <key>public.mime-type</key>
-        <string>image/jpeg</string>
-      </dict>
-    </dict>
-    <dict>
-      <key>UTTypeIdentifier</key>
-      <string>public.png</string>
-      <key>UTTypeConformsTo</key>
-      <array>
-        <string>public.image</string>
-      </array>
-      <key>UTTypeDescription</key>
-      <string>PNG image</string>
-      <key>UTTypeTagSpecification</key>
-      <dict>
-        <key>public.filename-extension</key>
-        <array>
-          <string>png</string>
-        </array>
-        <key>public.mime-type</key>
-        <string>image/png</string>
-      </dict>
-    </dict>
-  </array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>public.jpeg</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.image</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>JPEG image</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>jpeg</string>
+					<string>jpg</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>image/jpeg</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>public.png</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.image</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>PNG image</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>png</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>image/png</string>
+			</dict>
+		</dict>
+	</array>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -64,6 +64,21 @@
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+		</dict>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLIconFile</key>
+			<string></string>
+			<key>CFBundleURLName</key>
+			<string>app.rogy.hippocam</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>hippocam</string>
+			</array>
 		</dict>
 	</array>
 </dict>
