@@ -26,6 +26,26 @@ extension FetchDescriptor where T == MemoryModel {
     )
   }
   
+  static func memories(itemId: String) -> Self {
+    descriptor(
+      predicate: #Predicate { memory in
+        memory.items.contains(where: { item in
+          item.id == itemId
+        })
+      }
+    )
+  }
+  
+  static func searchMemoriesWithItems(itemName: String) -> Self {
+    descriptor(
+      predicate: #Predicate { memory in
+        memory.items.contains(where: { item in
+          item.name.localizedStandardContains(itemName)
+        })
+      }
+    )
+  }
+  
   static func search(_ query: String) -> Self {
     let regex = try! NSRegularExpression(pattern: "\\p{L}+", options: [])
     let range = NSRange(query.startIndex..<query.endIndex, in: query)

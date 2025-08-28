@@ -2,7 +2,6 @@ import AppIntents
 import DatabaseClient
 import RememberCore
 import Dependencies
-import DependenciesMacros
 
 public struct MemoryAppEntity: AppEntity {
   public let id: String

@@ -24,6 +24,7 @@ public struct MainAppReducer {
     case binding(BindingAction<State>)
     case home(Home.Action)
     case openMemory(Memory.ID)
+    case openMemoryWithItem(MemoryItem.ID)
     case startApp
   }
   
@@ -45,11 +46,23 @@ public struct MainAppReducer {
             }
             await send(.home(.createMemory(memory, memory.previewImage)))
           }
+        case .openMemoryWithItem(let id):
+          state.home.searchMemory = nil
+          state.home.settingsForm = nil
+          return .run { send in
+            guard let memory = try await database.fetchMemoryWithItem(id) else {
+              return reportIssue("Can't find memory with item id: \(id)")
+            }
+            await send(.home(.createMemory(memory, memory.previewImage)))
+          }
 //        case .home(.):
 //          return .none
         case .startApp:
           return .run { send in
             await database.configure()
+#if DEBUG
+            HippoCamAppShorcutsProvider.updateAppShortcutParameters()
+#endif
           }
         case .home(.memoryList(.addMemory)),
             .home(.memoryForm(.doneButtonTapped)),
