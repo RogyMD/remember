@@ -89,3 +89,10 @@ extension MemoryItemAppEntity {
     )
   }
 }
+
+extension Memory {
+  var subtitle: String {
+    notes.nonEmpty ?? tags.nonEmpty?.sorted(using: SortDescriptor(\.label)).map({ "#" + $0.label }).joined(separator: " ") ?? created.formatted(date: .abbreviated, time: .shortened)
+  }
+}
+
