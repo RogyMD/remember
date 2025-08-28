@@ -129,6 +129,7 @@ public struct RememberCameraView: View {
     })
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .ignoresSafeArea()
+    .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
         Menu {

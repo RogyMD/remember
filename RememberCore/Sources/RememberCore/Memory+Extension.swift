@@ -10,6 +10,12 @@ extension CGSize {
 }
 
 extension Memory {
+  public var displayTitle: String {
+    items.map(\.name).sorted(using: SortDescriptor(\.self)).joined(separator: ", ")
+  }
+}
+
+extension Memory {
   static let dateFormatter: DateFormatter = {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"

@@ -2,9 +2,8 @@ import SwiftUI
 import HomeFeature
 import ComposableArchitecture
 import DatabaseClient
-import BuyMeTeaFeature
 
-@main
+//@main
 struct RememberApp: App {
   @Bindable var store: StoreOf<Home> = Store(
     initialState: Home.State()

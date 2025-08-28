@@ -11,6 +11,8 @@ public struct DatabaseClient: Sendable {
   @DependencyEndpoint
   public var hasMemories: @Sendable () async throws -> Bool
   @DependencyEndpoint
+  public var fetchMemory: @Sendable (Memory.ID) async throws -> Memory?
+  @DependencyEndpoint
   public var fetchMemories: @Sendable () async throws -> [Memory]
   @DependencyEndpoint
   public var searchMemories: @Sendable (String) async throws -> [Memory]
@@ -73,6 +75,9 @@ extension DatabaseClient: DependencyKey {
       },
       hasMemories: {
         try await database().hasMemories()
+      },
+      fetchMemory: { id in
+        try await database().memory(id: id)
       },
       fetchMemories: {
         try await database().fetch(.memories, compactMap: Memory.init)

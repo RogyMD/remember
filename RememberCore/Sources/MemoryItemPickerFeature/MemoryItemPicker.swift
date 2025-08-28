@@ -14,7 +14,7 @@ public struct MemoryItemPicker {
     var image: Image
     public var items: IdentifiedArrayOf<MemoryItem>
     var focusedMemoryItem: MemoryItem.ID?
-    var shouldFocusItem: Bool = true
+    var shouldFocusItem: Bool
     var showsItems: Bool = true
     var showsRecognizedText: Bool = false
     var isBarsHidden: Bool = false
@@ -35,7 +35,7 @@ public struct MemoryItemPicker {
       self.items = items
       self.isNew = isNew
       self.recognizedText = recognizedText
-      self.shouldFocusItem = items.count == 1 && items.first?.name.isEmpty == true && recognizedText == nil
+      self.shouldFocusItem = isNew && items.count == 1 && items.first?.name.isEmpty == true
     }
     
     public init() {
@@ -120,8 +120,15 @@ public struct MemoryItemPicker {
       case .onAppear:
         if state.isAutoTextDetectionEnabled && state.isNew {
           state.isNew = false
+          let shouldFocusItem = state.shouldFocusItem
           state.shouldFocusItem = false
-          return .send(.recognizeTextButtonTapped)
+          return .run { [id = state.items.first?.id] send in
+            await send(.recognizeTextButtonTapped)
+            if let id, shouldFocusItem {
+              try await Task.sleep(for: .milliseconds(300))
+              await send(.binding(.set(\.focusedMemoryItem, id)))
+            }
+          }
         } else if state.shouldFocusItem {
           state.shouldFocusItem = false
           let id = state.items.first?.id
@@ -443,7 +450,10 @@ public struct MemoryItemPickerView: View {
 
 extension MemoryItemPicker.State {
   var title: String {
-    let name = items.map(\.name).joined(separator: ", ")
+    let name = items
+      .map(\.name)
+      .sorted(using: SortDescriptor(\.self))
+      .joined(separator: ", ")
     return name.isEmpty ? "Label items" : name
   }
   var disabledTextScanButton: Bool {
