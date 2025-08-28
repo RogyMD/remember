@@ -68,14 +68,14 @@ enum MemoryItemDataSource {
   static func suggestedItems() async throws -> [MemoryItemAppEntity] {
     try await Array(database.fetchMemories()
       .filter({ $0.isPrivate == false })
-      .prefix(20)
+      .prefix(25)
       .flatMap({ memory in
         memory
           .items
           .filter({ $0.name.trimmingCharacters(in: .whitespaces).isEmpty == false })
           .map({ MemoryItemAppEntity(memory: memory, item: $0) })
       })
-      .prefix(25))
+      .prefix(30))
   }
 }
 

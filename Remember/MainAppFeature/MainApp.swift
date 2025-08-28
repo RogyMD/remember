@@ -19,8 +19,8 @@ public struct MainAppReducer {
   }
   
   @CasePathable
-  public enum Action: Equatable, BindableAction {
-//  public enum Action: Equatable {
+//  public enum Action: Equatable, BindableAction {
+  public enum Action: Equatable {
     case binding(BindingAction<State>)
     case home(Home.Action)
     case openMemory(Memory.ID)
@@ -55,14 +55,10 @@ public struct MainAppReducer {
             }
             await send(.home(.createMemory(memory, memory.previewImage)))
           }
-//        case .home(.):
-//          return .none
         case .startApp:
           return .run { send in
             await database.configure()
-#if DEBUG
             HippoCamAppShorcutsProvider.updateAppShortcutParameters()
-#endif
           }
         case .home(.memoryList(.addMemory)),
             .home(.memoryForm(.doneButtonTapped)),
@@ -71,6 +67,7 @@ public struct MainAppReducer {
             .home(.memoryList(.memoryForm(.presented(.doneButtonTapped)))),
             .home(.memoryList(.memoryForm(.presented(.deleteConfirmationAlertButtonTapped)))),
             .home(.memoryList(.memoryForm(.presented(.forgetButtonTapped)))),
+            .home(.settingsForm(.presented(.syncFinished))),
             .home(.memoryList(.deleteRows)):
           return .run { send in
             HippoCamAppShorcutsProvider.updateAppShortcutParameters()

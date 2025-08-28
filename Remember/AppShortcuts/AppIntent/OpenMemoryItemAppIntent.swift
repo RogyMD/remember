@@ -3,10 +3,10 @@ import ComposableArchitecture
 import RememberCore
 
 public struct OpenMemoryItemAppIntent: AppIntent {
-  public static var title: LocalizedStringResource = "Show Memory with Item"
-  public static var description = IntentDescription("Shows details of the memory containing the item in HippoCam.")
+  public static var title: LocalizedStringResource = "Open Memory with Item"
+  public static var description = IntentDescription("Opens details of the memory containing the item in HippoCam.")
   public static var parameterSummary: some ParameterSummary {
-    Summary("Show me \(\.$item) in HippoCam")
+    Summary("Open \(\.$item) in HippoCam")
   }
   public static var openAppWhenRun = true
   public static var isDiscoverable = true
