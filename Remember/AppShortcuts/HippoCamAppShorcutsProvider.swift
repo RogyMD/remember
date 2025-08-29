@@ -43,7 +43,22 @@ public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
         "Where is \(\.$item) in \(.applicationName)",
       ],
       shortTitle: "Show Memory with Item",
-      systemImageName: "info.circle"
+      systemImageName: "photo"
+    )
+    
+    AppShortcut(
+      intent: CreateMemoryFromFileIntent(),
+      phrases: [
+        "Import to \(.applicationName)",
+        "Import image to \(.applicationName)",
+        "Import an image to \(.applicationName)",
+        "Import the image to \(.applicationName)",
+        "Import a file to \(.applicationName)",
+        "Import file file to \(.applicationName)",
+        "Create a memory in \(.applicationName)",
+      ],
+      shortTitle: "Import to HippoCam",
+      systemImageName: "photo.badge.arrow.down"
     )
   }
 }

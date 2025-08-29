@@ -13,8 +13,7 @@ public struct Memory: Sendable, Equatable, Identifiable {
   public var recognizedText: RecognizedText?
   public var isNew: Bool {
     ((items.isEmpty && location == nil && tags.isEmpty) ||
-    (items.count == 1 && location == nil && tags.isEmpty && items[0].name.isEmpty)) &&
-    created == modified
+    (items.count == 1 && location == nil && tags.isEmpty && items[0].name.isEmpty))
   }
   public init(
     id: String = UUID().uuidString,
