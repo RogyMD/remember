@@ -20,6 +20,9 @@ actor DatabaseService {
   func hasMemories() throws -> Bool {
     try fetchCount(.memories) > .zero
   }
+  func memory(id: Memory.ID) throws -> Memory? {
+    try existingMemory(id: id).map(Memory.init)
+  }
   func updateOrInsertMemory(_ memory: Memory) throws {
     guard let existingMemory = try existingMemory(id: memory.id) else {
       try insert(MemoryModel(memory))

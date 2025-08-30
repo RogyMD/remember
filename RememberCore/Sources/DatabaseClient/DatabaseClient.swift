@@ -11,11 +11,17 @@ public struct DatabaseClient: Sendable {
   @DependencyEndpoint
   public var hasMemories: @Sendable () async throws -> Bool
   @DependencyEndpoint
+  public var fetchMemory: @Sendable (Memory.ID) async throws -> Memory?
+  @DependencyEndpoint
   public var fetchMemories: @Sendable () async throws -> [Memory]
   @DependencyEndpoint
   public var searchMemories: @Sendable (String) async throws -> [Memory]
   @DependencyEndpoint
   public var searchMemoriesByTags: @Sendable (String) async throws -> [Memory]
+  @DependencyEndpoint
+  public var fetchMemoryWithItem: @Sendable (MemoryItem.ID) async throws -> Memory?
+  @DependencyEndpoint
+  public var searchMemoriesWithItems: @Sendable (String) async throws -> [Memory]
   @DependencyEndpoint
   public var fetchTags: @Sendable () async throws -> [MemoryTag]
   @DependencyEndpoint
@@ -74,6 +80,9 @@ extension DatabaseClient: DependencyKey {
       hasMemories: {
         try await database().hasMemories()
       },
+      fetchMemory: { id in
+        try await database().memory(id: id)
+      },
       fetchMemories: {
         try await database().fetch(.memories, compactMap: Memory.init)
       },
@@ -82,6 +91,14 @@ extension DatabaseClient: DependencyKey {
       },
       searchMemoriesByTags: { term in
         try await database().fetch(.memories, compactMap: Memory.init)
+      },
+      fetchMemoryWithItem: { itemId in
+        try await database()
+          .fetch(.memories(itemId: itemId), compactMap: Memory.init)
+          .first
+      },
+      searchMemoriesWithItems: { term in
+        try await database().fetch(.searchMemoriesWithItems(itemName: term), compactMap: Memory.init)
       },
       fetchTags: {
         try await database().fetch(.tags, compactMap: MemoryTag.init)

@@ -53,7 +53,9 @@ public struct BuyMeTea {
             }
             switch result {
             case .unverified(_, let verificationError):
+#if DEBUG
               logger.fault("Verification Failed. Error: \(String(describing: verificationError))")
+#endif
               await send(.set(\.isPurchased, false))
             case .verified:
               isTeaPurchased.withLock { $0 = true }

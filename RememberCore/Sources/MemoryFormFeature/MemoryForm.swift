@@ -22,10 +22,10 @@ public struct MemoryForm: Sendable {
     @Presents var tagsPicker: MemoryTagsPicker.State?
     var locationInProgress: Bool = false
     var isDeleteConfirmationAlertShown = false
-    public init(memory: Memory, isNew: Bool, previewImage: Image, memoryItemPicker: MemoryItemPicker.State? = nil) {
+    public init(memory: Memory, isNew: Bool, previewImage: Image? = nil, memoryItemPicker: MemoryItemPicker.State? = nil) {
       self.memory = memory
       self.isNew = isNew
-      self.previewImage = previewImage
+      self.previewImage = previewImage ?? .init(uiImage: memory.previewImage)
       self.memoryItemPicker = memoryItemPicker
     }
     
@@ -257,7 +257,7 @@ public struct MemoryFormView: View {
             store.send(.imageRowTapped, animation: .linear)
           } label: {
             // FIXME: do not have this map  here.
-            Text(store.memory.items.map(\.name).sorted().joined(separator: ", ").nonEmpty ?? "Tap to label items")
+            Text(store.memory.displayTitle.nonEmpty ?? "Tap to label items")
               .font(.body)
               .fontWeight(.semibold)
               .multilineTextAlignment(.leading)
@@ -484,7 +484,7 @@ extension MemoryForm.State {
 
 extension Memory {
   public var name: String {
-    items.map(\.name).sorted().joined(separator: ", ").nonEmpty ?? "No items"
+    displayTitle.nonEmpty ?? "No items"
   }
   @MainActor
   public var imageAligment: Alignment {

@@ -14,7 +14,7 @@ import SettingsFormFeature
 public struct Home {
   @ObservableState
   public struct State: Equatable {
-    var memoryForm: MemoryForm.State?
+    public var memoryForm: MemoryForm.State?
     @Presents public var searchMemory: SearchMemory.State?
     @Presents public var settingsForm: SettingsForm.State?
     var memoryList: MemoryList.State?
@@ -85,15 +85,16 @@ public struct Home {
         state.memoryForm = nil
         return .run { [database] send in
           guard let memory else { return }
-          if memory.tags.isEmpty == false || memory.location != nil || memory.notes.isEmpty == false || memory.recognizedText?.isEmpty == false {
+          if memory.items.count > 1, memory.tags.isEmpty == false || memory.location != nil || memory.notes.isEmpty == false || memory.recognizedText?.isEmpty == false {
             await send(.requestStoreReview)
           }
           try await database.updateMemory(memory)
+          await send(.memoryList(.updateMemory(memory)))
         }
       case .memoryForm(.cancelButtonTapped):
         state.memoryForm = nil
         return .none
-      case .memoryForm(.forgetButtonTapped):
+      case .memoryForm(.forgetButtonTapped), .memoryForm(.deleteConfirmationAlertButtonTapped):
         let memoryId = state.memoryForm?.memory.id
         state.memoryForm = nil
         return .run { [database] _ in
@@ -105,7 +106,7 @@ public struct Home {
       case .createMemory(let memory, let previewImage):
         state.memoryForm = .init(
           memory: memory,
-          isNew: true,
+          isNew: memory.isNew,
           previewImage: .init(uiImage: previewImage)
         )
         return .none
