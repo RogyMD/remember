@@ -25,7 +25,6 @@ public struct MainAppReducer {
     case openMemoryWithItem(MemoryItem.ID)
     case onContinueSearchableItemAction(NSUserActivity)
     case createMemory(Data)
-    case captureImage
     case startApp
   }
   
@@ -42,10 +41,6 @@ public struct MainAppReducer {
       // TODO: Move to a separate AppIntentReducer
       Reduce { state, action in
         switch action {
-        case .captureImage:
-          state.home.searchMemory = nil
-          state.home.settingsForm = nil
-          return .none//.send(.home(.came))
         case .createMemory(let data):
           state.home.searchMemory = nil
           state.home.settingsForm = nil
@@ -82,7 +77,7 @@ public struct MainAppReducer {
           return .run { send in
             HippoCamAppShorcutsProvider.updateAppShortcutParameters()
           }
-        case .home, .binding, .onContinueSearchableItemAction:
+        case .home, .onContinueSearchableItemAction:
           return .none
         }
       }
@@ -113,7 +108,7 @@ public struct MainAppReducer {
               .flatMap({ $0 })
             try await spotlight.upsert(searchableItems)
           }
-        case .binding, .home, .openMemory, .openMemoryWithItem, .createMemory, .captureImage:
+        case .home, .openMemory, .openMemoryWithItem, .createMemory:
           return .none
         }
       }
