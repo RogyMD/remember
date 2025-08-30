@@ -2,43 +2,44 @@ import AppIntents
 import DatabaseClient
 import RememberCore
 import Dependencies
-//import CoreLocation
+import UniformTypeIdentifiers
 @preconcurrency import CoreSpotlight
 
-//@AssistantEntity(schema: .photos.asset)
 public struct MemoryItemAppEntity: IndexedEntity {
   public let id: String
   public let memoryID: String
   
-  @Property(title: "Title")
+  @Property
   public var title: String?
   
   public let subtitle: String
   public let contentDescription: String
+  public var creationDate: Date?
   public var keywords: [String]
   public let thumbnailURL: URL
   public let previewImageURL: URL
   public let textContent: String?
   public var hideInSpotlight: Bool = false // TODO: return if it's private
   
-  var creationDate: Date?
-//  var location: CLPlacemark?
-//  var assetType: AssetType?
-//  var isFavorite: Bool
-//  var isHidden: Bool
-//  var hasSuggestedEdits: Bool
+  
   
   public var attributeSet: CSSearchableItemAttributeSet {
-    let set = CSSearchableItemAttributeSet(contentType: .png)
+    let set = CSSearchableItemAttributeSet(contentType: .image)
     set.identifier = id
     set.title = title
     set.keywords = keywords
     set.contentCreationDate = creationDate
     set.contentDescription = contentDescription
-    set.thumbnailURL = thumbnailURL
+    if let thumbnailData = try? Data(contentsOf: thumbnailURL) {
+      set.thumbnailData = thumbnailData
+    } else {
+      set.thumbnailURL = thumbnailURL
+    }
     set.textContent = textContent
+    set.domainIdentifier = "item"
     return set
   }
+ 
   
   public var displayRepresentation: DisplayRepresentation {
     .init(
@@ -58,17 +59,6 @@ public struct MemoryItemAppEntity: IndexedEntity {
   public static var typeDisplayRepresentation: TypeDisplayRepresentation = .init(name: LocalizedStringResource("Memorised Item"))
   public static var defaultQuery = MemoryItemQuery()
 }
-
-//@AssistantEnum(schema: .photos.assetType)
-//enum AssetType: String, AppEnum {
-//    case photo
-//    case video
-//
-//    static let caseDisplayRepresentations: [AssetType: DisplayRepresentation] = [
-//        .photo: "Photo",
-//        .video: "Video"
-//    ]
-//}
 
 import CoreTransferable
 
@@ -149,13 +139,13 @@ extension MemoryItemAppEntity {
     )
     self.title = item.name
     self.creationDate = memory.created
-//    self.assetType = .photo
   }
 }
+
+
 
 extension Memory {
   var subtitle: String {
     notes.nonEmpty ?? tags.nonEmpty?.sorted(using: SortDescriptor(\.label)).map({ "#" + $0.label }).joined(separator: " ") ?? created.formatted(date: .abbreviated, time: .shortened)
   }
 }
-

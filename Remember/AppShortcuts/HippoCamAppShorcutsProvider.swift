@@ -6,9 +6,10 @@ public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
     AppShortcut(
       intent: OpenMemoryItemAppIntent(),
       phrases: [
+        "Show in \(.applicationName)",
+        "Show \(\.$item) in \(.applicationName)",
         "Find \(\.$item) in \(.applicationName)",
         "Find in \(.applicationName)",
-        "Show in \(.applicationName)",
         "Look up in \(.applicationName)",
         "Search in \(.applicationName)",
         "Open \(\.$item) in \(.applicationName)",
@@ -22,12 +23,10 @@ public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
         "Look up the \(\.$item) in \(.applicationName)",
         "Look up my \(\.$item) in \(.applicationName)",
         "Look up \(\.$item) in \(.applicationName)",
-        "Show \(\.$item) in \(.applicationName)",
         "Show the \(\.$item) in \(.applicationName)",
         "Show my \(\.$item) in \(.applicationName)",
         "Show me \(\.$item) in \(.applicationName)",
         "Show me the \(\.$item) in \(.applicationName)",
-        "Show me \(\.$item) in \(.applicationName)",
         "Show me where last time I put \(\.$item) in \(.applicationName)",
         "Show me where last time I put my \(\.$item) in \(.applicationName)",
         "Show me where last time I put the \(\.$item) in \(.applicationName)",
@@ -56,9 +55,31 @@ public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
         "Import a file to \(.applicationName)",
         "Import file file to \(.applicationName)",
         "Create a memory in \(.applicationName)",
+        "Save with \(.applicationName)",
+        "Save in \(.applicationName)",
       ],
-      shortTitle: "Import to HippoCam",
+      shortTitle: "Import in HippoCam",
       systemImageName: "photo.badge.arrow.down"
     )
+    
+//    AppShortcut(
+//      intent: CameraCaptureImageIntent(),
+//      phrases: [
+//        "Capture with \(.applicationName)",
+//        "Capture in \(.applicationName)",
+//        "Snap with \(.applicationName)",
+//        "Snap in \(.applicationName)",
+//        "Take Picture with \(.applicationName)",
+//        "Take Picture in \(.applicationName)",
+//        "Take Photo with \(.applicationName)",
+//        "Take Photo in \(.applicationName)",
+//        "Remember in \(.applicationName)",
+//        "Remember with \(.applicationName)",
+//        "Memorize with \(.applicationName)",
+//        "Memorize in \(.applicationName)",
+//      ],
+//      shortTitle: "Import to HippoCam",
+//      systemImageName: "photo.badge.arrow.down"
+//    )
   }
 }

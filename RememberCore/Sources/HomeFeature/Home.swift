@@ -85,10 +85,11 @@ public struct Home {
         state.memoryForm = nil
         return .run { [database] send in
           guard let memory else { return }
-          if memory.tags.isEmpty == false || memory.location != nil || memory.notes.isEmpty == false || memory.recognizedText?.isEmpty == false {
+          if memory.items.count > 1, memory.tags.isEmpty == false || memory.location != nil || memory.notes.isEmpty == false || memory.recognizedText?.isEmpty == false {
             await send(.requestStoreReview)
           }
           try await database.updateMemory(memory)
+          await send(.memoryList(.updateMemory(memory)))
         }
       case .memoryForm(.cancelButtonTapped):
         state.memoryForm = nil

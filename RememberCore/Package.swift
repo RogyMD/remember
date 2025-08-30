@@ -33,6 +33,7 @@ let package = Package(
         .library(name: "FileClient", targets: ["FileClient"]),
         .library(name: "TextRecognizerClient", targets: ["TextRecognizerClient"]),
         .library(name: "FeedbackGenerator", targets: ["FeedbackGenerator"]),
+        .library(name: "SpotlightClient", targets: ["SpotlightClient"]),
     ],
     dependencies: [
       .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
@@ -117,6 +118,7 @@ let package = Package(
             "RememberCore",
             "MemoryFormFeature",
             "DatabaseClient",
+            "SpotlightClient",
           ]
         ),
         .target(
@@ -142,6 +144,7 @@ let package = Package(
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             "RememberCore",
             "DatabaseClient",
+            "SpotlightClient",
             "FileClient",
             "BuyMeTeaFeature",
           ]
@@ -154,6 +157,7 @@ let package = Package(
             "MemoryFormFeature",
             "MemoryListFeature",
             "DatabaseClient",
+            "SpotlightClient",
             "SearchMemoryFeature",
             "RequestStoreReview",
             "SharingKeys",
@@ -208,6 +212,12 @@ let package = Package(
         ),
         .target(
           name: "FeedbackGenerator",
+          dependencies: [
+            .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+          ]
+        ),
+        .target(
+          name: "SpotlightClient",
           dependencies: [
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
           ]

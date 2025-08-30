@@ -65,6 +65,7 @@ public struct MemoryList {
     case memoryTapped(Memory.ID)
     case closeButtonTapped
     case deleteRows(Date, IndexSet)
+    case deletedMemories([Memory.ID])
     case addMemory(Memory)
     case loadDataIfNeeded
     case memoriesLoaded([Memory])
@@ -113,9 +114,10 @@ public struct MemoryList {
                   index < list.count else { return .none }
           guard let id = state.dataSource[date]?.remove(at: index) else { return .none }
           state.memories.remove(id: id)
-          return .run { [database] _ in
+          return .run { [database] send in
             do {
               try await database.deleteMemory(id)
+              await send(.deletedMemories([id]))
             } catch {
               reportIssue(error)
             }
@@ -128,6 +130,7 @@ public struct MemoryList {
         case .memoryForm(.presented(let action)):
           return memoryFormAction(action, state: &state)
         case .memoryForm,
+            .deletedMemories,
             .closeButtonTapped:
           return .none
         }

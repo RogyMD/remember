@@ -5,6 +5,7 @@ public struct CameraView: UIViewControllerRepresentable {
   // Closure returns the captured (resized) image and the normalized focus point (0...1)
   var onCapture: (UIImage, CGPoint) -> Void
   
+  
   public init(onCapture: @escaping (UIImage, CGPoint) -> Void) {
     self.onCapture = onCapture
   }

@@ -5,12 +5,17 @@ import HomeFeature
 import DatabaseClient
 import MemoryFormFeature
 import OSLog
+import SpotlightClient
+import CoreSpotlight
+import SharingKeys
+import Sharing
 
 @Reducer
 public struct MainAppReducer {
   @ObservableState
   public struct State: Equatable {
     var home: Home.State = .init()
+    @Shared(.isSpotlightIndexed) var isSpotlightIndexed
 //    @Presents var <#attribute#>: <#State#>?
     
     //        public init() {
@@ -25,11 +30,14 @@ public struct MainAppReducer {
     case home(Home.Action)
     case openMemory(Memory.ID)
     case openMemoryWithItem(MemoryItem.ID)
+    case onContinueSearchableItemAction(NSUserActivity)
     case createMemory(Data)
+    case captureImage
     case startApp
   }
   
   @Dependency(\.database) var database
+  @Dependency(\.spotlightClient) var spotlight
   
   public init() {}
   
@@ -38,8 +46,13 @@ public struct MainAppReducer {
         Home()
       }
       
+      // app intent reducer
       Reduce { state, action in
         switch action {
+        case .captureImage:
+          state.home.searchMemory = nil
+          state.home.settingsForm = nil
+          return .none//.send(.home(.came))
         case .createMemory(let data):
           state.home.searchMemory = nil
           state.home.settingsForm = nil
@@ -63,7 +76,6 @@ public struct MainAppReducer {
         case .startApp:
           return .run { send in
             await database.configure()
-            HippoCamAppShorcutsProvider.updateAppShortcutParameters()
           }
         case .home(.memoryList(.addMemory)),
             .home(.memoryForm(.doneButtonTapped)),
@@ -77,7 +89,38 @@ public struct MainAppReducer {
           return .run { send in
             HippoCamAppShorcutsProvider.updateAppShortcutParameters()
           }
-        case .home, .binding:
+        case .home, .binding, .onContinueSearchableItemAction:
+          return .none
+        }
+      }
+      
+      // spotlight reducer
+      Reduce { state, action in
+        switch action {
+        case .home(.memoryList(.addMemory(let memory))), .home(.memoryList(.updateMemory(let memory))):
+          return .run { [spotlight] _ in
+            guard let searchableItems = memory.searchableItems else { return }
+            try await spotlight.upsert(searchableItems)
+          }
+        case .home(.memoryList(.deletedMemories(let ids))):
+          return .run { [spotlight] _ in
+            try await spotlight.remove(ids)
+          }
+        case .onContinueSearchableItemAction(let activity):
+          guard activity.activityType == CSSearchableItemActionType,
+                let itemID = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return .none }
+          return .send(.openMemoryWithItem(itemID))
+        case .startApp:
+          guard state.isSpotlightIndexed == false else { return .none }
+          return .run { [database, spotlight, isSpotlightIndexed = state.$isSpotlightIndexed] send in
+            isSpotlightIndexed.withLock({ $0 = true })
+            HippoCamAppShorcutsProvider.updateAppShortcutParameters()
+            let searchableItems = try await database.fetchMemories()
+              .compactMap(\.searchableItems)
+              .flatMap({ $0 })
+            try await spotlight.upsert(searchableItems)
+          }
+        case .binding, .home, .openMemory, .openMemoryWithItem, .createMemory, .captureImage:
           return .none
         }
       }
@@ -91,6 +134,14 @@ public struct MainAppReducer {
 //  }
 }
 
+extension Memory {
+  var searchableItems: [CSSearchableItemAttributeSet]? {
+    guard isPrivate == false else { return nil }
+    return items.filter({ $0.name.isEmpty == false }).map { item in
+      MemoryItemAppEntity(memory: self, item: item).attributeSet
+    }
+  }
+}
 
 // MARK: - MainAppView
 @main
@@ -111,6 +162,9 @@ public struct MainApp: App {
       HomeView(store: store.scope(state: \.home, action: \.home))
         .task {
           store.send(.startApp)
+        }
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+          store.send(.onContinueSearchableItemAction(activity))
         }
     }
   }

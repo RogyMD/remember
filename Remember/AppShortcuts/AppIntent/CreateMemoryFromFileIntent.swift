@@ -2,8 +2,8 @@ import AppIntents
 import UniformTypeIdentifiers
 
 struct CreateMemoryFromFileIntent: AppIntent {
-  static var title: LocalizedStringResource = "Save Image as Memory in Hippocam"
-  static var description = IntentDescription("Imports an image into HippoCam and creates a memory.")
+  static var title: LocalizedStringResource = "Save Image as Memory"
+  static var description = IntentDescription("Imports an image into HippoCam and creates a memory. Enable 'Show in Share Sheet' to be able to import images from anywhere.")
   static var openAppWhenRun: Bool = true
   
   @Parameter(title: "Image", supportedContentTypes: [.image])
