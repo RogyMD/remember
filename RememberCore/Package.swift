@@ -118,7 +118,6 @@ let package = Package(
             "RememberCore",
             "MemoryFormFeature",
             "DatabaseClient",
-            "SpotlightClient",
           ]
         ),
         .target(
@@ -144,7 +143,6 @@ let package = Package(
             .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
             "RememberCore",
             "DatabaseClient",
-            "SpotlightClient",
             "FileClient",
             "BuyMeTeaFeature",
           ]
@@ -157,7 +155,6 @@ let package = Package(
             "MemoryFormFeature",
             "MemoryListFeature",
             "DatabaseClient",
-            "SpotlightClient",
             "SearchMemoryFeature",
             "RequestStoreReview",
             "SharingKeys",

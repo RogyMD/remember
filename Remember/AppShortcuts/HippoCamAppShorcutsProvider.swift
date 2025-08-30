@@ -61,25 +61,5 @@ public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
       shortTitle: "Import in HippoCam",
       systemImageName: "photo.badge.arrow.down"
     )
-    
-//    AppShortcut(
-//      intent: CameraCaptureImageIntent(),
-//      phrases: [
-//        "Capture with \(.applicationName)",
-//        "Capture in \(.applicationName)",
-//        "Snap with \(.applicationName)",
-//        "Snap in \(.applicationName)",
-//        "Take Picture with \(.applicationName)",
-//        "Take Picture in \(.applicationName)",
-//        "Take Photo with \(.applicationName)",
-//        "Take Photo in \(.applicationName)",
-//        "Remember in \(.applicationName)",
-//        "Remember with \(.applicationName)",
-//        "Memorize with \(.applicationName)",
-//        "Memorize in \(.applicationName)",
-//      ],
-//      shortTitle: "Import to HippoCam",
-//      systemImageName: "photo.badge.arrow.down"
-//    )
   }
 }

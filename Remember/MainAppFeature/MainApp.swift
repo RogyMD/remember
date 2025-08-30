@@ -16,17 +16,10 @@ public struct MainAppReducer {
   public struct State: Equatable {
     var home: Home.State = .init()
     @Shared(.isSpotlightIndexed) var isSpotlightIndexed
-//    @Presents var <#attribute#>: <#State#>?
-    
-    //        public init() {
-    //            self.ini
-    //        }
   }
   
   @CasePathable
-//  public enum Action: Equatable, BindableAction {
   public enum Action: Equatable {
-    case binding(BindingAction<State>)
     case home(Home.Action)
     case openMemory(Memory.ID)
     case openMemoryWithItem(MemoryItem.ID)
@@ -46,7 +39,7 @@ public struct MainAppReducer {
         Home()
       }
       
-      // app intent reducer
+      // TODO: Move to a separate AppIntentReducer
       Reduce { state, action in
         switch action {
         case .captureImage:
@@ -94,7 +87,7 @@ public struct MainAppReducer {
         }
       }
       
-      // spotlight reducer
+      // TODO: Move to a separate SpotlightReducer
       Reduce { state, action in
         switch action {
         case .home(.memoryList(.addMemory(let memory))), .home(.memoryList(.updateMemory(let memory))):
@@ -125,13 +118,6 @@ public struct MainAppReducer {
         }
       }
     }
-  
-//  private func <#action#>Action(_ action: Action.<#Action#>, state: inout State) -> EffectOf<Self> {
-//    switch action {
-//    case .<#action#>:
-//      return .none
-//    }
-//  }
 }
 
 extension Memory {

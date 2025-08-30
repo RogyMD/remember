@@ -2,16 +2,6 @@ import AppIntents
 import ComposableArchitecture
 import RememberCore
 
-//@AssistantIntent(schema: .photos.openAsset)
-//struct OpenMemoryAppIntent: OpenIntent {
-//  let store = MainApp.mainStore
-//  var target: MemoryItemAppEntity
-//  func perform() async throws -> some IntentResult {
-//    await store.send(.openMemoryWithItem(target.id))
-//    return .result()
-//  }
-//}
-
 public struct OpenMemoryItemAppIntent: AppIntent {
   public static var title: LocalizedStringResource = "Open Memory with Item"
   public static var description = IntentDescription("Opens details of the memory containing the item in HippoCam.")
