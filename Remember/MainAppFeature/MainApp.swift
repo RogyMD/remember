@@ -64,6 +64,9 @@ public struct MainAppReducer {
         case .startApp:
           return .run { send in
             await database.configure()
+#if DEBUG
+            HippoCamAppShorcutsProvider.updateAppShortcutParameters()
+#endif
           }
         case .home(.memoryList(.addMemory)),
             .home(.memoryForm(.doneButtonTapped)),

@@ -27,7 +27,6 @@ public struct Home {
   }
   
   @CasePathable
-  //  public enum Action: Equatable, BindableAction {
   public enum Action: Equatable {
     case memoryForm(MemoryForm.Action)
     case memoryList(MemoryList.Action)
@@ -239,7 +238,7 @@ public struct HomeView: View {
                   .frame(width: 44, height: 44, alignment: .center)
               }
               .foregroundStyle(.primary)
-              .accessibilityLabel("Memories Library")
+              .accessibilityLabel("HippoCam Library")
             }
           }
       }

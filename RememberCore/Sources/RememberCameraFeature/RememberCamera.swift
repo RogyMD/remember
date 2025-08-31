@@ -39,6 +39,7 @@ public struct RememberCamera {
     case importImage(Data)
     case pickedFile(URL)
     case settingsButtonTapped
+    case clipboardButtonTapped
   }
   
   @Dependency(\.date.now) var now
@@ -52,6 +53,13 @@ public struct RememberCamera {
       state,
       action in
       switch action {
+      case .clipboardButtonTapped:
+        return .run { send in
+          guard let imageData = UIPasteboard.general.image?.pngData() else {
+            return
+          }
+          await send(.importImage(imageData))
+        }
       case .importImage(let data):
         return .run { [now] send in
           guard let uiImage = UIImage(data: data) else { return }
@@ -142,6 +150,11 @@ public struct RememberCameraView: View {
             isFilesPresented = true
           } label: {
             Label("Files", systemImage: "folder")
+          }
+          Button {
+            store.send(.clipboardButtonTapped)
+          } label: {
+            Label("Get Pasteboard", systemImage: "clipboard")
           }
           Button {
             store.send(.settingsButtonTapped)

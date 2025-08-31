@@ -42,13 +42,16 @@ public struct MemoryItemAppEntity: IndexedEntity {
  
   
   public var displayRepresentation: DisplayRepresentation {
-    .init(
+    let image: DisplayRepresentation.Image? = {
+      if let data = try? Data(contentsOf: thumbnailURL) {
+        return .init(data: data)
+      }
+      return nil
+    }()
+    return .init(
       title: .init(stringLiteral: title ?? subtitle),
       subtitle: .init(stringLiteral: subtitle),
-      image: .init(
-        url: thumbnailURL,
-        isTemplate: false
-      ),
+      image: image,
       synonyms: [
         "the \(title ?? subtitle)",
         "my \(title ?? subtitle)",
@@ -114,14 +117,14 @@ enum MemoryItemDataSource {
   static func suggestedItems() async throws -> [MemoryItemAppEntity] {
     try await Array(database.fetchMemories()
       .filter({ $0.isPrivate == false })
-      .prefix(15)
+      .prefix(20)
       .flatMap({ memory in
         memory
           .items
           .filter({ $0.name.trimmingCharacters(in: .whitespaces).isEmpty == false })
           .map({ MemoryItemAppEntity(memory: memory, item: $0) })
       })
-      .prefix(15))
+      .prefix(20))
   }
 }
 
@@ -146,6 +149,8 @@ extension MemoryItemAppEntity {
 
 extension Memory {
   var subtitle: String {
-    notes.nonEmpty ?? tags.nonEmpty?.sorted(using: SortDescriptor(\.label)).map({ "#" + $0.label }).joined(separator: " ") ?? created.formatted(date: .abbreviated, time: .shortened)
+    notes.nonEmpty ??
+    tags.nonEmpty?.sorted(using: SortDescriptor(\.label)).map({ "#" + $0.label }).joined(separator: " ") ??
+    created.formatted(date: .abbreviated, time: .shortened)
   }
 }

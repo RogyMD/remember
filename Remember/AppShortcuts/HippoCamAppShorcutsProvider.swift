@@ -1,6 +1,7 @@
 import AppIntents
 
 public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
+  public static var shortcutTileColor: ShortcutTileColor { .blue }
   @AppShortcutsBuilder
   public static var appShortcuts: [AppShortcut] {
     AppShortcut(
@@ -8,32 +9,17 @@ public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
       phrases: [
         "Show in \(.applicationName)",
         "Show \(\.$item) in \(.applicationName)",
-        "Find \(\.$item) in \(.applicationName)",
-        "Find in \(.applicationName)",
-        "Look up in \(.applicationName)",
-        "Search in \(.applicationName)",
+        "Show me \(\.$item) in \(.applicationName)",
+        "Show my \(\.$item) in \(.applicationName)",
+        "Show the \(\.$item) in \(.applicationName)",
+        "Show me the \(\.$item) in \(.applicationName)",
+        "Reveal in \(.applicationName)",
+        "Reveal \(\.$item) in \(.applicationName)",
+        "Reveal my \(\.$item) in \(.applicationName)",
+        "Reveal the \(\.$item) in \(.applicationName)",
         "Open \(\.$item) in \(.applicationName)",
         "Open the \(\.$item) in \(.applicationName)",
         "Open my \(\.$item) in \(.applicationName)",
-        "Find the \(\.$item) in \(.applicationName)",
-        "Find my \(\.$item) in \(.applicationName)",
-        "Look for \(\.$item) in \(.applicationName)",
-        "Look for the \(\.$item) in \(.applicationName)",
-        "Look for my \(\.$item) in \(.applicationName)",
-        "Look up the \(\.$item) in \(.applicationName)",
-        "Look up my \(\.$item) in \(.applicationName)",
-        "Look up \(\.$item) in \(.applicationName)",
-        "Show the \(\.$item) in \(.applicationName)",
-        "Show my \(\.$item) in \(.applicationName)",
-        "Show me \(\.$item) in \(.applicationName)",
-        "Show me the \(\.$item) in \(.applicationName)",
-        "Show me where last time I put \(\.$item) in \(.applicationName)",
-        "Show me where last time I put my \(\.$item) in \(.applicationName)",
-        "Show me where last time I put the \(\.$item) in \(.applicationName)",
-        "Show me where is \(\.$item) in \(.applicationName)",
-        "Show me where is \(\.$item) in \(.applicationName)",
-        "Show me where is \(\.$item) in \(.applicationName)",
-        "Show the memory with \(\.$item) in \(.applicationName)",
         "Where’s my \(\.$item) in \(.applicationName)",
         "Where’s the \(\.$item) in \(.applicationName)",
         "Where’s \(\.$item) in \(.applicationName)",
@@ -53,7 +39,7 @@ public struct HippoCamAppShorcutsProvider: AppShortcutsProvider {
         "Import an image to \(.applicationName)",
         "Import the image to \(.applicationName)",
         "Import a file to \(.applicationName)",
-        "Import file file to \(.applicationName)",
+        "Import file to \(.applicationName)",
         "Create a memory in \(.applicationName)",
         "Save with \(.applicationName)",
         "Save in \(.applicationName)",

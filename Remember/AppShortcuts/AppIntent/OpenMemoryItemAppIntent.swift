@@ -2,29 +2,21 @@ import AppIntents
 import ComposableArchitecture
 import RememberCore
 
-public struct OpenMemoryItemAppIntent: AppIntent {
-  public static var title: LocalizedStringResource = "Open Memory with Item"
-  public static var description = IntentDescription("Opens details of the memory containing the item in HippoCam.")
-  public static var parameterSummary: some ParameterSummary {
-    Summary("Open \(\.$item) in HippoCam")
+struct OpenMemoryItemAppIntent: AppIntent {
+  static var title: LocalizedStringResource = "Show Memory with Item"
+  static var description = IntentDescription("Shows details of the memory containing the item in HippoCam.")
+  static var parameterSummary: some ParameterSummary {
+    Summary("Show the memory containing \(\.$item)")
   }
-  public static var openAppWhenRun = true
-  public static var isDiscoverable = true
+  static var openAppWhenRun = true
   
-  @Parameter(title: "Memorised Item")
-  public var item: MemoryItemAppEntity
+  @Parameter(title: "Saved Item")
+  var item: MemoryItemAppEntity
   
   let store = MainApp.mainStore
-  public init(item: IntentParameter<MemoryItemAppEntity>) {
-    _item = item
-  }
   
-  public init() {
-  }
-  
-  @MainActor
-  public func perform() async throws -> some IntentResult & ProvidesDialog {
-    store.send(.openMemoryWithItem(item.id))
+  func perform() async throws -> some IntentResult & ProvidesDialog {
+    await store.send(.openMemoryWithItem(item.id))
     return .result(dialog: "\(item.title ?? item.subtitle) is here")
   }
 }
