@@ -9,6 +9,7 @@ public struct MemoryTagsPicker {
   @ObservableState
   public struct State: Equatable {
     var tags: IdentifiedArrayOf<MemoryTag>
+    var displayTags: [MemoryTag] = []
     public var selectedTags: Set<MemoryTag.ID>
     var newTag: String
     var isDataLoaded: Bool
@@ -19,6 +20,7 @@ public struct MemoryTagsPicker {
       newTag: String = ""
     ) {
       self.tags = tags
+      self.displayTags = tags.elements
       self.selectedTags = selectedTags
       self.newTag = newTag
       self.isDataLoaded = tags.isEmpty == false
@@ -59,8 +61,9 @@ public struct MemoryTagsPicker {
           guard state.isDataLoaded == false else { return .none }
           state.isDataLoaded = true
           return .run { [database] send in
-            let tags = try await database.fetchTags()
+            let tags = try await database.fetchTags().sorted(by: <)
             await send(.binding(.set(\.tags, tags.identified)))
+            await send(.binding(.set(\.displayTags, tags)))
           }
         case .tagTapped(let tag):
           if state.selectedTags.contains(tag) {
@@ -76,6 +79,7 @@ public struct MemoryTagsPicker {
           let tag = MemoryTag(label: tag)
           state.tags.updateOrAppend(tag)
           state.tags.sort(by: <)
+          state.displayTags = state.tags.elements
           return .run { [database] _ in
             do {
               try await database.insertTag(tag)
@@ -89,10 +93,9 @@ public struct MemoryTagsPicker {
             let newTag = tag.components(separatedBy: .whitespaces).first ?? trimmed
             await send(.binding(.set(\.newTag, "")))
             await send(.addTagAndSelect(newTag))
-            await send(.addTagAndSelect(newTag))
           }
         case .binding(\.newTag):
-          return .run { [tag = state.newTag] send in
+          return .run { [tag = state.newTag, allTags = state.tags, selectedTags = state.selectedTags] send in
             let trimmed = tag.trimmingCharacters(in: .whitespaces)
             if tag != trimmed {
               if trimmed.isEmpty {
@@ -102,6 +105,10 @@ public struct MemoryTagsPicker {
                 await send(.primaryButtonTapped)
               }
             }
+            let filterTags = trimmed.isEmpty ? allTags.elements :  allTags.filter({ $0.label.localizedStandardContains(tag) })
+            let selectedTags = selectedTags.compactMap({ allTags[id: $0] })
+            let displayTags = Set(filterTags + selectedTags)
+            await send(.set(\.displayTags, displayTags.sorted(by: <)))
           }
         case .binding, .cancelButtonTapped, .doneButtonTapped:
           return .none
@@ -166,7 +173,7 @@ public struct MemoryTagsPickerView: View {
       }
     } else {
       FlowLayout {
-        ForEach(store.tags) { tag in
+        ForEach(store.displayTags) { tag in
           Button {
             store.send(.tagTapped(tag.id))
           } label: {
