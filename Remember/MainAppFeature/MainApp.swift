@@ -1,4 +1,5 @@
 import ComposableArchitecture
+import _AppIntents_SwiftUI
 import RememberCore
 import SwiftUI
 import HomeFeature
@@ -16,10 +17,14 @@ public struct MainAppReducer {
   public struct State: Equatable {
     var home: Home.State = .init()
     @Shared(.isSpotlightIndexed) var isSpotlightIndexed
+    @Shared(.isSiriTipHidden) var isSiriTipHidden
+    var isSiriTipVisible: Bool = false
+    var siriTipMemory: Memory?
   }
   
   @CasePathable
-  public enum Action: Equatable {
+  public enum Action: Equatable, BindableAction {
+    case binding(BindingAction<State>)
     case home(Home.Action)
     case openMemory(Memory.ID)
     case openMemoryWithItem(MemoryItem.ID)
@@ -34,6 +39,8 @@ public struct MainAppReducer {
   public init() {}
   
     public var body: some ReducerOf<Self> {
+      BindingReducer()
+      
       Scope(state: \.home, action: \.home) {
         Home()
       }
@@ -69,6 +76,7 @@ public struct MainAppReducer {
 #endif
           }
         case .home(.memoryList(.addMemory)),
+            .home(.memoryList(.updateMemory)),
             .home(.memoryForm(.doneButtonTapped)),
             .home(.memoryForm(.deleteConfirmationAlertButtonTapped)),
             .home(.memoryForm(.forgetButtonTapped)),
@@ -80,7 +88,14 @@ public struct MainAppReducer {
           return .run { send in
             HippoCamAppShorcutsProvider.updateAppShortcutParameters()
           }
-        case .home, .onContinueSearchableItemAction:
+        case .binding(\.isSiriTipVisible):
+          guard state.isSiriTipHidden == false else { return .none }
+          return .run { [isSiriTipHidden = state.$isSiriTipHidden, isSiriTipVisible = state.isSiriTipVisible] send in
+            await send(.set(\.siriTipMemory, nil))
+            guard isSiriTipVisible == false else { return }
+            isSiriTipHidden.withLock { $0 = true }
+          }
+        case .home, .onContinueSearchableItemAction, .binding:
           return .none
         }
       }
@@ -89,9 +104,13 @@ public struct MainAppReducer {
       Reduce { state, action in
         switch action {
         case .home(.memoryList(.addMemory(let memory))), .home(.memoryList(.updateMemory(let memory))):
-          return .run { [spotlight] _ in
+          return .run { [spotlight, isSiriTipHidden = state.isSiriTipHidden, siriTipMemory = state.siriTipMemory] send in
             guard let searchableItems = memory.searchableItems else { return }
             try await spotlight.upsert(searchableItems)
+            
+            guard isSiriTipHidden == false, siriTipMemory == nil else { return }
+            await send(.set(\.siriTipMemory, memory))
+            await send(.set(\.isSiriTipVisible, true))
           }
         case .home(.memoryList(.deletedMemories(let ids))):
           return .run { [spotlight] _ in
@@ -111,7 +130,7 @@ public struct MainAppReducer {
               .flatMap({ $0 })
             try await spotlight.upsert(searchableItems)
           }
-        case .home, .openMemory, .openMemoryWithItem, .createMemory:
+        case .home, .openMemory, .openMemoryWithItem, .createMemory, .binding:
           return .none
         }
       }
@@ -150,6 +169,10 @@ public struct MainApp: App {
         .onContinueUserActivity(CSSearchableItemActionType) { activity in
           store.send(.onContinueSearchableItemAction(activity))
         }
+      
+      if let siriTipAppIntent = store.siriTipAppIntent {
+        SiriTipView(intent: siriTipAppIntent, isVisible: $store.isSiriTipVisible)
+      }
     }
   }
 }
@@ -164,6 +187,13 @@ public struct MainApp: App {
 //    in
 //  }
 //}
+
+extension MainAppReducer.State {
+  var siriTipAppIntent: OpenMemoryItemAppIntent? {
+    guard isSiriTipHidden == false, let siriTipMemory else { return nil }
+    return siriTipMemory.items.first?.appIntent(memory: siriTipMemory)
+  }
+}
 
 private let logger = Logger(
     subsystem: "Remember",

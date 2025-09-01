@@ -6,6 +6,7 @@ private extension String {
   static let isAutoTextDetectionEnabled = "isAutoTextDetectionEnabled"
   static let isTeaPurchased = "isTeaPurchased"
   static let isSpotlightIndexed = "isSpotlightIndexed"
+  static let isSiriTipHidden = "isSiriTipHidden"
 }
 
 extension UserDefaults {
@@ -32,5 +33,8 @@ public extension SharedKey where Self == AppStorageKey<Bool>.Default {
   }
   static var isSpotlightIndexed: Self {
     Self[.appStorage(.isSpotlightIndexed, store: .live()), default: false]
+  }
+  static var isSiriTipHidden: Self {
+    Self[.appStorage(.isSiriTipHidden, store: .live()), default: false]
   }
 }
