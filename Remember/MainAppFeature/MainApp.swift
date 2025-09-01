@@ -172,6 +172,9 @@ public struct MainApp: App {
       
       if let siriTipAppIntent = store.siriTipAppIntent {
         SiriTipView(intent: siriTipAppIntent, isVisible: $store.isSiriTipVisible)
+          .siriTipViewStyle(.automatic)
+          .scenePadding()
+          .transition(.move(edge: .bottom).animation(.bouncy))
       }
     }
   }
