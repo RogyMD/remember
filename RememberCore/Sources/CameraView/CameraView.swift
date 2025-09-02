@@ -33,7 +33,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       view.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.6)
       view.layer.cornerRadius = 16
       view.clipsToBounds = true
-    view.alpha = 0
+      view.alpha = 0
       return view
   }()
   private let zoomLabel: UILabel = {

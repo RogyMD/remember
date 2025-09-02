@@ -346,7 +346,7 @@
 				INFOPLIST_FILE = Remember/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HippoCam;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Remember to access your camera to take photos and help you track your items.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -359,7 +359,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 25.9.1;
+				MARKETING_VERSION = 25.9.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.rogy.Remember;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -386,7 +386,7 @@
 				INFOPLIST_FILE = Remember/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = HippoCam;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Allow Remember to access your camera to take photos and help you track your items.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -399,7 +399,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 25.9.1;
+				MARKETING_VERSION = 25.9.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.rogy.Remember;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

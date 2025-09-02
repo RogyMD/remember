@@ -28,7 +28,7 @@
 			<key>Title</key>
 			<string>App Version</string>
 			<key>DefaultValue</key>
-			<string>25.9.1</string>
+			<string>25.9.2</string>
 			<key>Key</key>
 			<string>appVersion</string>
 		</dict>
