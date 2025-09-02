@@ -95,20 +95,24 @@ public struct MemoryTagsPicker {
             await send(.addTagAndSelect(newTag))
           }
         case .binding(\.newTag):
-          return .run { [tag = state.newTag, allTags = state.tags, selectedTags = state.selectedTags] send in
-            let trimmed = tag.trimmingCharacters(in: .whitespaces)
-            if tag != trimmed {
-              if trimmed.isEmpty {
+          let newTag = state.newTag
+          guard newTag.isEmpty == false else { return .none }
+          let trimmed = newTag.trimmingCharacters(in: .whitespaces)
+          if newTag != trimmed {
+            if trimmed.isEmpty {
+              return .run { send in
                 try await Task.sleep(for: .milliseconds(50))
                 await send(.binding(.set(\.newTag, "")))
-              } else {
-                await send(.primaryButtonTapped)
               }
+            } else {
+              return .send(.primaryButtonTapped)
             }
-            let filterTags = trimmed.isEmpty ? allTags.elements :  allTags.filter({ $0.label.localizedStandardContains(tag) })
-            let selectedTags = selectedTags.compactMap({ allTags[id: $0] })
+          } else {
+            let allTags = state.tags
+            let filterTags = trimmed.isEmpty ? allTags.elements :  allTags.filter({ $0.label.localizedStandardContains(newTag) })
+            let selectedTags = state.selectedTags.compactMap({ allTags[id: $0] })
             let displayTags = Set(filterTags + selectedTags)
-            await send(.set(\.displayTags, displayTags.sorted(by: <)))
+            return .send(.set(\.displayTags, displayTags.sorted(by: <)))
           }
         case .binding, .cancelButtonTapped, .doneButtonTapped:
           return .none
@@ -189,20 +193,6 @@ public struct MemoryTagsPickerView: View {
   }
 }
 
-struct GrayBubbleButtonStyle: PrimitiveButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(uiColor: .tertiarySystemBackground))
-            .cornerRadius(10)
-            .foregroundColor(.secondary)
-            .onTapGesture {
-              configuration.trigger()
-            }
-    }
-}
-
 
 struct DynamicButtonStyle: PrimitiveButtonStyle {
     let isSelected: Bool
@@ -212,8 +202,9 @@ struct DynamicButtonStyle: PrimitiveButtonStyle {
             BorderedProminentButtonStyle()
                 .makeBody(configuration: configuration)
         } else {
-            GrayBubbleButtonStyle()
-                .makeBody(configuration: configuration)
+          BorderedButtonStyle()
+            .makeBody(configuration: configuration)
+            .foregroundStyle(.secondary)
         }
     }
 }

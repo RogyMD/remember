@@ -89,10 +89,10 @@ public struct MainAppReducer {
             HippoCamAppShorcutsProvider.updateAppShortcutParameters()
           }
         case .binding(\.isSiriTipVisible):
-          guard state.isSiriTipHidden == false else { return .none }
-          return .run { [isSiriTipHidden = state.$isSiriTipHidden, isSiriTipVisible = state.isSiriTipVisible] send in
+          let isSiriTipVisible = state.isSiriTipVisible
+          guard state.isSiriTipHidden == false, isSiriTipVisible == false else { return .none }
+          return .run { [isSiriTipHidden = state.$isSiriTipHidden] send in
             await send(.set(\.siriTipMemory, nil))
-            guard isSiriTipVisible == false else { return }
             isSiriTipHidden.withLock { $0 = true }
           }
         case .home, .onContinueSearchableItemAction, .binding:
@@ -108,7 +108,7 @@ public struct MainAppReducer {
             guard let searchableItems = memory.searchableItems else { return }
             try await spotlight.upsert(searchableItems)
             
-            guard isSiriTipHidden == false, siriTipMemory == nil else { return }
+            guard isSiriTipHidden == false, memory.isPrivate == false, siriTipMemory == nil else { return }
             await send(.set(\.siriTipMemory, memory))
             await send(.set(\.isSiriTipVisible, true))
           }
