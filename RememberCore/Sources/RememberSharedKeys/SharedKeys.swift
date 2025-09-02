@@ -6,7 +6,7 @@ private extension String {
   static let isAutoTextDetectionEnabled = "isAutoTextDetectionEnabled"
   static let isTeaPurchased = "isTeaPurchased"
   static let isSpotlightIndexed = "isSpotlightIndexed"
-  static let isSiriTipHidden = "isSiriTipHidden"
+  static let isSiriTipHidden = "isSiriTipHidden2"
 }
 
 extension UserDefaults {
