@@ -229,13 +229,19 @@ public struct HomeView: View {
               Button {
                 store.send(.listButtonTapped)
               } label: {
-                Image(systemName: "photo.stack")
-                  .resizable()
-                  .aspectRatio(contentMode: .fit)
-                  .padding(10)
-                  .background(.thinMaterial)
-                  .clipShape(Circle())
-                  .frame(width: 44, height: 44, alignment: .center)
+                if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+                  Image(systemName: "photo.stack")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                } else {
+                  Image(systemName: "photo.stack")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(10)
+                    .background(.thinMaterial)
+                    .clipShape(Circle())
+                    .frame(width: 44, height: 44, alignment: .center)
+                }
               }
               .foregroundStyle(.primary)
               .accessibilityLabel("HippoCam Library")
@@ -248,20 +254,34 @@ public struct HomeView: View {
     }
     .sheet(store: store.scope(state: \.$searchMemory, action: \.searchMemory)) { store in
       NavigationStack {
-        SearchMemoryView(store: store) {
-          IfLetStore(self.store.scope(state: \.memoryList, action: \.memoryList)) { store in
-            MemoryListView(store: store)
-          } else: {
-            EmptyView()
+        if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+          SearchMemoryView(store: store) {
+            IfLetStore(self.store.scope(state: \.memoryList, action: \.memoryList)) { store in
+              MemoryListView(store: store)
+            } else: {
+              EmptyView()
+            }
           }
+        } else {
+          SearchMemoryView(store: store) {
+            IfLetStore(self.store.scope(state: \.memoryList, action: \.memoryList)) { store in
+              MemoryListView(store: store)
+            } else: {
+              EmptyView()
+            }
+          }
+          .presentationBackground(.thinMaterial)
         }
-        .presentationBackground(.thinMaterial)
       }
     }
     .sheet(store: store.scope(state: \.$settingsForm, action: \.settingsForm)) { store in
       NavigationStack {
-        SettingsFormView(store: store)
-        .presentationBackground(.thinMaterial)
+        if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+          SettingsFormView(store: store)
+        } else {
+          SettingsFormView(store: store)
+            .presentationBackground(.thinMaterial)
+        }
       }
     }
   }

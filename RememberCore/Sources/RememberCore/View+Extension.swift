@@ -41,6 +41,23 @@ public extension View {
       self
     }
   }
+  @ViewBuilder
+  func glassEffect(
+    isInteractive: Bool = false,
+    isClear: Bool = true,
+    tint: Color? = nil,
+    in shape: some Shape = Circle(),
+    noGlassEffect: (Self) -> some View
+  ) -> some View {
+    if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+      glassEffect(
+        isClear ? .clear.interactive(isInteractive).tint(tint) : .regular.interactive(isInteractive).tint(tint),
+        in: shape
+      )
+    } else {
+      noGlassEffect(self)
+    }
+  }
 }
 
 #if os(iOS)

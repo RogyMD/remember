@@ -6,7 +6,7 @@ import Dependencies
 
 @ModelActor
 actor DatabaseService {
-  static var shared: DatabaseService = DatabaseService(modelContainer: .appModelContainer)
+  nonisolated(unsafe) static var shared: DatabaseService = DatabaseService(modelContainer: .appModelContainer)
   
   func fetch<T: PersistentModel, V>(
     _ descriptor: FetchDescriptor<T>,

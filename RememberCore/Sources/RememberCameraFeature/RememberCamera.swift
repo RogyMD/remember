@@ -162,13 +162,19 @@ public struct RememberCameraView: View {
             Label("Settings", systemImage: "gear")
           }
         } label: {
-          Image(systemName: "ellipsis")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .padding(10)
-            .frame(width: 44, height: 44, alignment: .center)
-            .background(.thinMaterial)
-            .clipShape(Circle())
+          if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+            Image(systemName: "square.and.arrow.down")
+              .resizable()
+              .scaledToFit()
+          } else {
+            Image(systemName: "ellipsis")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .padding(10)
+              .background(.thinMaterial)
+              .clipShape(Circle())
+              .frame(width: 44, height: 44, alignment: .center)
+          }
         }
         .foregroundStyle(.primary)
       }
