@@ -171,9 +171,9 @@ public struct RememberCameraView: View {
               .resizable()
               .aspectRatio(contentMode: .fit)
               .padding(10)
+              .frame(width: 44, height: 44, alignment: .center)
               .background(.thinMaterial)
               .clipShape(Circle())
-              .frame(width: 44, height: 44, alignment: .center)
           }
         }
         .foregroundStyle(.primary)
