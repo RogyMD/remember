@@ -275,11 +275,11 @@ public struct MemoryFormView: View {
           Button {
             store.send(.tagsRowTapped)
           } label: {
-              MemoryTagsPickerView(store: Store(initialState: MemoryTagsPicker.State(tags: store.memory.tags, selectedTags: Set(store.memory.tags.ids)), reducer: {
-                MemoryTagsPicker()
-              }))
-              .tagsSection
-              .allowsHitTesting(false)
+            MemoryTagsPickerView(store: Store(initialState: MemoryTagsPicker.State(tags: store.memory.tags, selectedTags: Set(store.memory.tags.ids)), reducer: {
+              MemoryTagsPicker()
+            }))
+            .tagsSection
+            .allowsHitTesting(false)
           }
         }
         
@@ -364,7 +364,7 @@ public struct MemoryFormView: View {
         if store.memoryItemPicker == nil {
           toolbarContent
         }
-    })
+      })
     .toolbarBackgroundVisibility(.visible, for: .bottomBar)
     .navigationTitle(Text(store.memory.name))
     .sheet(store: store.scope(state: \.$tagsPicker, action: \.tagsPicker)) { store in
@@ -426,27 +426,29 @@ public struct MemoryFormView: View {
       }
       
     }
-    ToolbarItem(placement: .bottomBar) {
-      HStack {
-        if store.isNew == false {
-          Button {
-            store.send(.deleteButtonTapped)
-          } label: {
-            Image(systemName: "trash")
-              .resizable()
-          }
-          .foregroundStyle(.red)
-        }
-        
-        Spacer()
-        
-        ShareLink(
-          item: store.memory,
-          preview: SharePreview(store.memory.name, image: store.previewImage, icon: Image(uiImage: store.memory.thumbnailImage))
-        )
+    ToolbarItemGroup(placement: .bottomBar) {
+      toolbarBottomBarView
     }
   }
-}
+  
+  @ViewBuilder
+  private var toolbarBottomBarView: some View {
+    Button {
+      store.send(.deleteButtonTapped)
+    } label: {
+      Image(systemName: "trash")
+        .resizable()
+    }
+    .foregroundStyle(.red)
+    
+    Spacer()
+    
+    ShareLink(
+      item: store.memory,
+      preview: SharePreview(store.memory.name, image: store.previewImage, icon: Image(uiImage: store.memory.thumbnailImage))
+    )
+    .buttonStyle(.plain)
+  }
 }
 
 extension Memory: Transferable {

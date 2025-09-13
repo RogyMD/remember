@@ -345,14 +345,21 @@ public struct MemoryItemPickerView: View {
         }
         .bold()
       }
-      ToolbarItem(placement: .bottomBar) {
-        HStack {
-          Button {
-            store.send(.labelVisibilityButtonTapped, animation: .linear)
-          } label: {
+      ToolbarItemGroup(placement: .bottomBar) {
+        Button {
+          store.send(.labelVisibilityButtonTapped, animation: .linear)
+        } label: {
+          if #available(iOS 26.0, *) {
             Image(systemName: store.showsItems ? "capsule.fill" : "capsule")
               .resizable()
               .aspectRatio(contentMode: .fit)
+              .contentTransition(.symbolEffect(.replace, options: .nonRepeating))
+              .foregroundStyle(store.showsItems ? Color.accentColor : Color(uiColor: .label))
+          } else {
+            Image(systemName: store.showsItems ? "capsule.fill" : "capsule")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
               .padding(10)
               .when(
                 store.showsItems,
@@ -363,11 +370,11 @@ public struct MemoryItemPickerView: View {
               .frame(width: 44, height: 44, alignment: .center)
               .foregroundStyle(Color(uiColor: .label))
           }
-          
-          Spacer()
-          
-          textScanButton
         }
+        
+        Spacer()
+        
+        textScanButton
       }
     }
     .modifier(KeyboardAdaptive(keyboardFrame: $keyboardFrame))
@@ -378,19 +385,30 @@ public struct MemoryItemPickerView: View {
       store.send(.recognizeTextButtonTapped, animation: .linear)
     } label: {
       ZStack {
-        Image(systemName: store.recognizedText?.isEmpty == true ? "text.page.slash.fill" : "text.viewfinder")
-          .resizable()
-          .aspectRatio(contentMode: .fit)
-          .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
-          .padding(10)
-          .when(
-            store.showsRecognizedText,
-            then: { $0.background(Color.accentColor) },
-            else: { $0.background(.thinMaterial) }
-          )
-          .clipShape(Circle())
-          .frame(width: 44, height: 44, alignment: .center)
-          .foregroundStyle(Color(uiColor: .label))
+        if #available(iOS 26.0, *) {
+          Image(systemName: store.recognizedText?.isEmpty == true ? "text.page.slash.fill" : "text.viewfinder")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
+//            .when(store.showsRecognizedText) {
+//              $0.tint(Color.accentColor)
+//            }
+            .foregroundStyle(store.showsRecognizedText ? Color.accentColor : Color(uiColor: .label))
+        } else {
+          Image(systemName: store.recognizedText?.isEmpty == true ? "text.page.slash.fill" : "text.viewfinder")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer), options: .nonRepeating))
+            .padding(10)
+            .when(
+              store.showsRecognizedText,
+              then: { $0.background(Color.accentColor) },
+              else: { $0.background(.thinMaterial) }
+            )
+            .clipShape(Circle())
+            .frame(width: 44, height: 44, alignment: .center)
+            .foregroundStyle(Color(uiColor: .label))
+        }
         
         if store.isTextRecognitionInProgress {
           ProgressView()

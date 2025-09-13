@@ -140,8 +140,11 @@ public struct MainAppReducer {
 extension Memory {
   var searchableItems: [CSSearchableItemAttributeSet]? {
     guard isPrivate == false else { return nil }
-    return items.filter({ $0.name.isEmpty == false }).map { item in
-      MemoryItemAppEntity(memory: self, item: item).attributeSet
+    return items
+      .filter({ $0.name.trimmingCharacters(in: .whitespaces).isEmpty == false })
+      .nonEmpty?
+      .map { item in
+        MemoryItemAppEntity(memory: self, item: item).attributeSet
     }
   }
 }
