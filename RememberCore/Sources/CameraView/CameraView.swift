@@ -63,7 +63,14 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     return captureButton
   }()
   private var torchButton: UIButton = {
-    var configuration = UIButton.Configuration.filled()
+    var configuration: UIButton.Configuration =
+    if #available(iOS 26.0, *) {
+      UIButton.Configuration.prominentClearGlass()
+    } else {
+      UIButton.Configuration.filled()
+    }
+    configuration.background.backgroundColor = .systemBlue
+    configuration.baseForegroundColor = .white
     configuration.cornerStyle = .capsule
     return UIButton(configuration: configuration, primaryAction: nil)
   }()
@@ -695,12 +702,9 @@ final class CaptureButton: UIButton {
     layer.addSublayer(outerCircleLayer)
     layer.addSublayer(innerCircleLayer)
 
-    outerCircleLayer.lineWidth = 2
-    outerCircleLayer.strokeColor = UIColor.white.cgColor
-    outerCircleLayer.fillColor = UIColor.clear.cgColor
+    outerCircleLayer.fillColor = UIColor.systemGray.withAlphaComponent(0.7).cgColor
 
     innerCircleLayer.fillColor = UIColor.white.cgColor
-    innerCircleLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     
     addTarget(self, action: #selector(self.touchDown), for: .touchDown)
     addTarget(self, action: #selector(self.touchUp), for: .touchUpInside)
@@ -711,11 +715,13 @@ final class CaptureButton: UIButton {
   @objc
   private func touchDown() {
     self.innerCircleLayer.opacity = 0.7
+    self.innerCircleLayer.transform = CATransform3DMakeScale(0.8, 0.8, 1)
   }
   
   @objc
   private func touchUp() {
     self.innerCircleLayer.opacity = 1
+    self.innerCircleLayer.transform = CATransform3DIdentity
   }
 
   override func layoutSubviews() {
@@ -727,8 +733,8 @@ final class CaptureButton: UIButton {
     outerCircleLayer.frame = bounds
 
     let innerRect = bounds.insetBy(dx: inset, dy: inset)
-    let innerPath = UIBezierPath(ovalIn: innerRect)
-    innerCircleLayer.path = innerPath.cgPath
-    innerCircleLayer.frame = bounds
+    innerCircleLayer.bounds = innerRect
+    innerCircleLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
+    innerCircleLayer.path = UIBezierPath(ovalIn: innerCircleLayer.bounds).cgPath
   }
 }

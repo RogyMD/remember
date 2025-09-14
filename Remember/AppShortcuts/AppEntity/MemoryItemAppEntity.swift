@@ -21,8 +21,6 @@ public struct MemoryItemAppEntity: IndexedEntity {
   public let textContent: String?
   public var hideInSpotlight: Bool = false // TODO: return if it's private
   
-  
-  
   public var attributeSet: CSSearchableItemAttributeSet {
     let set = CSSearchableItemAttributeSet(contentType: .image)
     set.identifier = id
