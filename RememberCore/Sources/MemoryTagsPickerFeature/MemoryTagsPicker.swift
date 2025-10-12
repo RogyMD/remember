@@ -96,7 +96,10 @@ public struct MemoryTagsPicker {
           }
         case .binding(\.newTag):
           let newTag = state.newTag
-          guard newTag.isEmpty == false else { return .none }
+          guard newTag.isEmpty == false else {
+            state.displayTags = state.tags.elements
+            return .none
+          }
           let trimmed = newTag.trimmingCharacters(in: .whitespaces)
           if newTag != trimmed {
             if trimmed.isEmpty {
@@ -134,12 +137,17 @@ public struct MemoryTagsPickerView: View {
   public var body: some View {
     Form {
       Section {
-        tagsSection
+        if store.displayTags.isEmpty && store.newTag.isEmpty == false {
+          Text("Tap 'Space' or 'Done' on keyboard to add the tag #\(store.newTag)")
+        } else {
+          tagsSection
+        }
       }
       
       Section {
         TextField("Add new tag...", text: $store.newTag)
           .autocorrectionDisabled()
+          .submitLabel(.done)
           .onSubmit {
             store.send(.primaryButtonTapped)
             newTagFocused = true
