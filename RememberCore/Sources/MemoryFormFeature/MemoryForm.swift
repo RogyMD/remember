@@ -405,22 +405,18 @@ public struct MemoryFormView: View {
   @ToolbarContentBuilder
   var toolbarContent: some ToolbarContent {
     ToolbarItem(placement: .topBarTrailing) {
-      Button("Done") {
+      DoneButton {
         store.send(.doneButtonTapped, animation: .linear)
       }
-      .bold()
     }
     ToolbarItem(placement: .topBarLeading) {
       if store.isNew {
-        Button("Delete") {
+        Button(systemImage: "trash") {
           store.send(.forgetButtonTapped, animation: .linear)
         }
         .foregroundStyle(.red)
       } else {
-        Button("Cancel", role: .cancel) {
-          store.send(.cancelButtonTapped, animation: .linear)
-        }
-        .accessibilityAction(.escape) {
+        CancelButton {
           store.send(.cancelButtonTapped, animation: .linear)
         }
       }

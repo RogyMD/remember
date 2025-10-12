@@ -155,15 +155,14 @@ public struct MemoryTagsPickerView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
-        Button("Cancel") {
+        CancelButton {
           store.send(.cancelButtonTapped, animation: .linear)
         }
       }
       ToolbarItem(placement: .topBarTrailing) {
-        Button("Done") {
+        DoneButton {
           store.send(.doneButtonTapped, animation: .linear)
         }
-        .bold()
       }
     }
   }

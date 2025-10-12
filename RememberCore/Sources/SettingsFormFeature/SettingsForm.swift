@@ -172,7 +172,7 @@ public struct SettingsFormView: View {
     .navigationTitle("Settings")
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
-        Button("Close") {
+        CancelButton(title: "Close") {
           store.send(.closeButtonTapped)
         }
       }

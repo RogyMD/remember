@@ -191,11 +191,8 @@ public struct Home {
 
 extension CapturedImage {
   func previewImageAndPoint() async -> (UIImage, CGPoint) {
-    let cropped = await image.croppedToScreen() ?? UIImage()
-    let screenSize = await MainActor.run {
-      UIScreen.main.bounds.size
-    }
-    return (cropped, point.convertPoint(from: image.size, to: .init(origin: .zero, size: screenSize)))
+    let preview = await image.previewImage() ?? UIImage()
+    return (preview, point.convertPoint(from: image.size, to: .init(origin: .zero, size: preview.size)))
   }
 }
 

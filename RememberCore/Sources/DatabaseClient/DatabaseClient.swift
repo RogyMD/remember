@@ -163,7 +163,7 @@ extension DatabaseClient: DependencyKey {
             }
           } else {
             if fileClient.itemExists(memory.previewImageURL) == false {
-              guard let image = UIImage(contentsOfFile: memory.originalImageURL.absoluteString), let previewImage = await image.croppedToScreen() else {
+              guard let image = UIImage(contentsOfFile: memory.originalImageURL.absoluteString), let previewImage = await image.previewImage() else {
                 continue
               }
               try await fileClient.saveMemory(memory, image: image, previewImage: previewImage)

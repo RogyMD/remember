@@ -36,6 +36,7 @@ public struct RememberCamera {
     //  public enum Action: Equatable {
     case binding(BindingAction<State>)
     case capturedImage(CapturedImage)
+    case cameraCapturedImage(CapturedImage)
     case importImage(Data)
     case pickedFile(URL)
     case settingsButtonTapped
@@ -59,6 +60,12 @@ public struct RememberCamera {
             return
           }
           await send(.importImage(imageData))
+        }
+      case .cameraCapturedImage(let image):
+        return .run { send in
+          guard let croppedImage = await image.image.croppedToScreen() else { return }
+          let point = image.point.convertPoint(from: image.image.size, to: .init(origin: .zero, size: croppedImage.size))
+          await send(.capturedImage(.init(image: croppedImage, point: point)))
         }
       case .importImage(let data):
         return .run { [now] send in
@@ -131,7 +138,7 @@ public struct RememberCameraView: View {
       }
 #else
       CameraView { image, point in
-        store.send(.capturedImage(.init(image: image, point: point)))
+        store.send(.cameraCapturedImage(.init(image: image, point: point)))
       }
 #endif
     })

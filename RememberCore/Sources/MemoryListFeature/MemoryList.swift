@@ -254,7 +254,7 @@ public struct MemoryListView: View {
       }
       
       ToolbarItem(placement: .topBarLeading) {
-        Button("Close") {
+        CancelButton(title: "Close") {
           store.send(.closeButtonTapped)
         }
       }

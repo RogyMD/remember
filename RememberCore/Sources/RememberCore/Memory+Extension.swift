@@ -16,10 +16,11 @@ extension Memory {
 }
 
 extension Memory {
-  static let dateFormatter: DateFormatter = {
+static let dateFormatter: DateFormatter = {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
     dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0) // fix probably (but also need to migrate old folders to new)
     return dateFormatter
   }()
   

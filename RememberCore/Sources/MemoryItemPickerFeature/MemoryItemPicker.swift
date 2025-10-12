@@ -251,7 +251,7 @@ public struct MemoryItemPickerView: View {
   
   public var body: some View {
     ZStack {
-      ZoomableImage(image: store.image, contentMode: .fill, magnification: $magnification)
+      ZoomableImage(image: store.image, contentMode: .fit, magnification: $magnification)
         .background(Color.clear)
         .simultaneousGesture(
           DragGesture(minimumDistance: .zero)
@@ -335,12 +335,12 @@ public struct MemoryItemPickerView: View {
     .toolbarVisibility(toolbarsHidden ? .hidden : .visible, for: .navigationBar, .bottomBar)
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {
-        Button("Cancel") {
+        CancelButton {
           store.send(.cancelButtonTapped, animation: .linear)
         }
       }
       ToolbarItem(placement: .topBarTrailing) {
-        Button("Done") {
+        DoneButton {
           store.send(.doneButtonTapped, animation: .linear)
         }
         .bold()
@@ -378,6 +378,7 @@ public struct MemoryItemPickerView: View {
       }
     }
     .modifier(KeyboardAdaptive(keyboardFrame: $keyboardFrame))
+    .background(.background)
   }
   
   private var textScanButton: some View {
