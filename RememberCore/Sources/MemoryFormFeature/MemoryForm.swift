@@ -429,13 +429,15 @@ public struct MemoryFormView: View {
   
   @ViewBuilder
   private var toolbarBottomBarView: some View {
-    Button {
-      store.send(.deleteButtonTapped)
-    } label: {
-      Image(systemName: "trash")
-        .resizable()
+    if store.isNew == false {
+      Button {
+        store.send(.deleteButtonTapped)
+      } label: {
+        Image(systemName: "trash")
+          .resizable()
+      }
+      .foregroundStyle(.red)
     }
-    .foregroundStyle(.red)
     
     Spacer()
     

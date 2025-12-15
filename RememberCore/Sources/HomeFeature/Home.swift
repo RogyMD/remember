@@ -15,27 +15,28 @@ public struct Home {
   @ObservableState
   public struct State: Equatable {
     public var memoryForm: MemoryForm.State?
-    @Presents public var searchMemory: SearchMemory.State?
+    var presentationDetent: PresentationDetent = .bottom
+    public var searchMemory: SearchMemory.State
     @Presents public var settingsForm: SettingsForm.State?
-    var memoryList: MemoryList.State?
+    var memoryList: MemoryList.State
     var camera: RememberCamera.State = .init()
     
     public init(memoryForm: MemoryForm.State? = nil, memoryList: MemoryList.State? = nil) {
       self.memoryForm = memoryForm
-      self.memoryList = memoryList
+      self.memoryList = .empty
+      self.searchMemory = .init(isSearchPresented: false)
     }
   }
   
   @CasePathable
-  public enum Action: Equatable {
+  public enum Action: Equatable, BindableAction {
+    case binding(BindingAction<State>)
     case memoryForm(MemoryForm.Action)
     case memoryList(MemoryList.Action)
     case camera(RememberCamera.Action)
-    case searchMemory(PresentationAction<SearchMemory.Action>)
+    case searchMemory(SearchMemory.Action)
     case settingsForm(PresentationAction<SettingsForm.Action>)
     case createMemory(Memory, UIImage)
-    case listButtonTapped
-    case swipeDown
     case requestStoreReview
     case onOpenURL(URL)
   }
@@ -47,9 +48,18 @@ public struct Home {
   public init() {}
   
   public var body: some ReducerOf<Self> {
-    //      BindingReducer()
+    BindingReducer()
+    
     Scope(state: \.camera, action: \.camera) {
       RememberCamera()
+    }
+    
+    Scope(state: \.searchMemory, action: \.searchMemory) {
+      SearchMemory()
+    }
+    
+    Scope(state: \.memoryList, action: \.memoryList) {
+      MemoryList()
     }
     
     Reduce { state, action in
@@ -71,40 +81,30 @@ public struct Home {
         return .run { _ in
           try? await Self.requestReviewAsync()
         }
-      case .listButtonTapped:
-        state.memoryList = .empty
-        state.searchMemory = .init()
-        return .none
-      case .swipeDown:
-        state.memoryList = .empty
-        state.searchMemory = .init(isSearchPresented: true)
-        return .none
       case .memoryForm(.doneButtonTapped):
         let memory = state.memoryForm?.memory
         state.memoryForm = nil
-        let isMemoryListVisible = state.memoryList != nil
         return .run { [database] send in
           guard let memory else { return }
           if memory.items.count > 1, memory.tags.isEmpty == false || memory.location != nil || memory.notes.isEmpty == false || memory.recognizedText?.isEmpty == false {
             await send(.requestStoreReview)
           }
           try await database.updateMemory(memory)
-          if isMemoryListVisible {
-            await send(.memoryList(.updateMemory(memory)))
-          }
+          await send(.memoryList(.updateMemory(memory)))
         }
       case .memoryForm(.cancelButtonTapped):
         state.memoryForm = nil
         return .none
       case .memoryForm(.forgetButtonTapped), .memoryForm(.deleteConfirmationAlertButtonTapped):
-        let memoryId = state.memoryForm?.memory.id
+        guard let memoryId = state.memoryForm?.memory.id else { return .none }
         state.memoryForm = nil
+        state.memoryList.remove(memoryId)
         return .run { [database] _ in
-          guard let memoryId else { return }
           try await database.deleteMemory(memoryId)
         }
       case .memoryList(.closeButtonTapped):
-        return .send(.searchMemory(.dismiss))
+        state.presentationDetent = .bottom
+        return .none
       case .createMemory(let memory, let previewImage):
         state.memoryForm = .init(
           memory: memory,
@@ -132,8 +132,16 @@ public struct Home {
           await send(.createMemory(memory, croppedImage))
           try await database.saveMemory(memory, image.image, croppedImage)
         }
-      case .searchMemory(.presented(.resultMemoryTapped)):
+      case .searchMemory(.resultMemoryTapped):
         return .send(.requestStoreReview)
+      case .searchMemory(.binding(\.isSearchPresented)):
+        guard state.searchMemory.isSearchPresented else { return .none }
+        state.presentationDetent = .large
+        return .none
+      case .binding(\.presentationDetent):
+        guard state.presentationDetent == .bottom else { return .none }
+        state.searchMemory.isSearchPresented = false
+        return .none
       case .camera(.settingsButtonTapped):
         state.settingsForm = .init()
         return .none
@@ -141,25 +149,17 @@ public struct Home {
           .memoryList,
           .searchMemory,
           .camera,
-          .settingsForm:
+          .settingsForm,
+          .binding:
         return .none
       }
     }
     .ifLet(\.memoryForm, action: \.memoryForm) {
       MemoryForm()
     }
-    .ifLet(\.$searchMemory, action: \.searchMemory) {
-      SearchMemory()
-    }
     .ifLet(\.$settingsForm, action: \.settingsForm) {
       SettingsForm()
     }
-    .ifLet(\.memoryList, action: \.memoryList) {
-      MemoryList()
-    }
-//    .ifLet(\.camera, action: \.camera) {
-//      RememberCamera()
-//    }
   }
   
   static func requestReviewAsync() async throws  {
@@ -214,77 +214,70 @@ public struct HomeView: View {
         MemoryFormView(store: store)
       } else: {
         RememberCameraView(store: store.scope(state: \.camera, action: \.camera))
-          .gesture(
-            DragGesture(minimumDistance: 30, coordinateSpace: .local)
-              .onEnded { value in
-                if value.velocity.height < -500 {
-                  store.send(.listButtonTapped)
-                } else if value.velocity.height > 500 {
-                  store.send(.swipeDown)
-                }
-              }
-          )
-          .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-              Button {
-                store.send(.listButtonTapped)
-              } label: {
-                if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
-                  Image(systemName: "photo.stack")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                } else {
-                  Image(systemName: "photo.stack")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .padding(10)
-                    .background(.thinMaterial)
-                    .clipShape(Circle())
-                    .frame(width: 44, height: 44, alignment: .center)
-                }
-              }
-              .foregroundStyle(.primary)
-              .accessibilityLabel("HippoCam Library")
-            }
-          }
       }
     }
     .onOpenURL { url in
       store.send(.onOpenURL(url))
     }
-    .sheet(store: store.scope(state: \.$searchMemory, action: \.searchMemory)) { store in
-      NavigationStack {
-        if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
-          SearchMemoryView(store: store) {
-            IfLetStore(self.store.scope(state: \.memoryList, action: \.memoryList)) { store in
-              MemoryListView(store: store)
-            } else: {
-              EmptyView()
+    .when(store.memoryForm == nil, apply: {
+      $0.sheet(isPresented: .constant(true)) {
+        NavigationStack {
+          if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+            searchMemoryView
+          } else {
+            searchMemoryView
+              .presentationBackground(.thinMaterial)
+          }
+        }
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(true)
+        .presentationBackgroundInteraction(.enabled)
+        .presentationDetents(
+          [.bottom, .large],
+          selection: $store.presentationDetent
+        )
+        .sheet(item: $store.scope(state: \.settingsForm, action: \.settingsForm)) { store in
+          NavigationStack {
+            if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+              SettingsFormView(store: store)
+            } else {
+              SettingsFormView(store: store)
+                .presentationBackground(.thinMaterial)
             }
           }
-        } else {
-          SearchMemoryView(store: store) {
-            IfLetStore(self.store.scope(state: \.memoryList, action: \.memoryList)) { store in
-              MemoryListView(store: store)
-            } else: {
-              EmptyView()
-            }
-          }
-          .presentationBackground(.thinMaterial)
         }
       }
-    }
-    .sheet(store: store.scope(state: \.$settingsForm, action: \.settingsForm)) { store in
-      NavigationStack {
-        if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
-          SettingsFormView(store: store)
-        } else {
-          SettingsFormView(store: store)
-            .presentationBackground(.thinMaterial)
-        }
+    })
+  }
+  
+  var searchMemoryView: some View {
+    SearchMemoryView(store: store.scope(state: \.searchMemory, action: \.searchMemory)) {
+      MemoryListView(
+        store: store.scope(
+          state: \.memoryList,
+          action: \.memoryList
+        )
+      )
+      .when(store.presentationDetent == .large) {
+        $0.toolbar(content: {
+          ToolbarItem(placement: .topBarTrailing) {
+            EditButton()
+          }
+          
+          ToolbarItem(placement: .topBarLeading) {
+            CancelButton(title: "Close") {
+              store.send(.memoryList(.closeButtonTapped))
+            }
+          }
+        })
       }
     }
   }
+}
+
+
+extension PresentationDetent {
+  static let bottom = PresentationDetent.height(78)
 }
 
 //extension HomeView {

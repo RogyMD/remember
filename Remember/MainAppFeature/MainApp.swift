@@ -49,7 +49,6 @@ public struct MainAppReducer {
       Reduce { state, action in
         switch action {
         case .createMemory(let data):
-          state.home.searchMemory = nil
           state.home.settingsForm = nil
           return .send(.home(.camera(.importImage(data))))
         case .openMemory(let id):
@@ -60,7 +59,6 @@ public struct MainAppReducer {
             await send(.home(.createMemory(memory, memory.previewImage)))
           }
         case .openMemoryWithItem(let id):
-          state.home.searchMemory = nil
           state.home.settingsForm = nil
           return .run { send in
             guard let memory = try await database.fetchMemoryWithItem(id) else {

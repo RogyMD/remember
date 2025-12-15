@@ -365,7 +365,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
         captureButton.heightAnchor.constraint(equalToConstant: 80),
         
         captureButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-        captureButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -10),
+        captureButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -78),
     ])
     
     NSLayoutConstraint.activate([

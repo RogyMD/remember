@@ -98,7 +98,7 @@ public struct MemoryList {
           state.updateMemories(memories)
           return .none
         case .updateMemory(let memory):
-          state.memories.updateOrAppend(memory)
+          state.updateOrAppend(memory)
           return .none
         case .memoryTapped(let id):
           guard let memory = state.memories[id: id] else { return .none }
@@ -114,6 +114,12 @@ public struct MemoryList {
                   index < list.count else { return .none }
           guard let id = state.dataSource[date]?.remove(at: index) else { return .none }
           state.memories.remove(id: id)
+          if state.dataSource[date]?.isEmpty == true {
+            state.dataSource.removeValue(forKey: date)
+            if let index = state.rememberedDays.firstIndex(of: date) {
+              state.rememberedDays.remove(at: index)
+            }
+          }
           return .run { [database] send in
             do {
               try await database.deleteMemory(id)
@@ -123,9 +129,7 @@ public struct MemoryList {
             }
           }
         case .addMemory(let memory):
-          state.memories.updateOrAppend(memory)
-          state.dataSource[memory.created.startOfDay, default: []].insert(memory.id, at: .zero)
-          state.rememberedDays = state.dataSource.keys.sorted(by: >)
+          state.updateOrAppend(memory)
           return .none
         case .memoryForm(.presented(let action)):
           return memoryFormAction(action, state: &state)
@@ -207,6 +211,29 @@ extension MemoryList.State {
     self.dataSource = dataSource
     self.rememberedDays = dataSource.keys.sorted(by: >)
   }
+  mutating func updateOrAppend(_ memory: Memory) {
+    guard isDataLoaded == true else { return }
+    if memories.updateOrAppend(memory) == nil {
+      let date = memory.created.startOfDay
+      dataSource[date, default: []].insert(memory.id, at: .zero)
+      rememberedDays = dataSource.keys.sorted(by: >)
+    }
+  }
+  public mutating func remove(_ memoryId: Memory.ID) {
+    guard isDataLoaded == true else { return }
+    if let memory = memories.remove(id: memoryId) {
+      let date = memory.created.startOfDay
+      if let index = dataSource[date]?.firstIndex(of: memoryId) {
+        dataSource[date]?.remove(at: index)
+        if dataSource[date]?.isEmpty == true {
+          dataSource.removeValue(forKey: date)
+          if let index = rememberedDays.firstIndex(of: date) {
+            rememberedDays.remove(at: index)
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -223,9 +250,9 @@ public struct MemoryListView: View {
     List {
       if store.isDataLoaded == true {
         if store.rememberedDays.isEmpty {
-          Text("No recorded memories")
-            .multilineTextAlignment(.center)
+          ContentUnavailableView("No memories", systemImage: "photo")
             .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
         } else {
           ForEach(store.rememberedDays, id: \.self) { day in
             if let memories = store.dataSource[day]?.compactMap({ store.memories[id: $0] }) {
@@ -247,24 +274,20 @@ public struct MemoryListView: View {
       }
     }
     .listStyle(.plain)
-    .navigationTitle("Memories")
-    .toolbar(content: {
-      ToolbarItem(placement: .topBarTrailing) {
-        EditButton()
-      }
-      
-      ToolbarItem(placement: .topBarLeading) {
-        CancelButton(title: "Close") {
-          store.send(.closeButtonTapped)
-        }
-      }
-    })
     .onAppear {
       store.send(.loadDataIfNeeded)
     }
-    .fullScreenCover(store: store.scope(state: \.$memoryForm, action: \.memoryForm)) { store in
+    .fullScreenCover(item: $store.scope(state: \.memoryForm, action: \.memoryForm)) { store in
       NavigationStack {
         MemoryFormView(store: store)
+      }
+    }
+    .when(true) {
+      if #available(iOS 26.0, *) {
+        $0.navigationTitle("Memories")
+      } else {
+        $0.navigationTitle("Memories")
+          .navigationBarTitleDisplayMode(.inline)
       }
     }
   }

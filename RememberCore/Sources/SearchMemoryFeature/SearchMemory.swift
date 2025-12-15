@@ -12,7 +12,7 @@ public struct SearchMemory {
     public var isSearchPresented = false
     var query: String = ""
     var isLoading = false
-
+    
     public init(
       resultsList: MemoryList.State? = nil,
       isSearchPresented: Bool = false,
@@ -39,65 +39,66 @@ public struct SearchMemory {
   
   public init() {}
   enum SearchRequestID { case id }
-    public var body: some ReducerOf<Self> {
-      BindingReducer()
-      Reduce { state, action in
-        switch action {
-        case .updateSearchResults(let results):
-          state.resultsList = results
-            .nonEmpty
-            .map({ MemoryList.State(memories: $0, isDataLoaded: true, allowsDelete: false, displayPrivateItemName: true) })
-          return .none
-        case .binding(\.query):
-          state.isLoading = true
-          let trimmedQuery = state.query.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
-          return .run { [continuousClock, database] send in
-            try await continuousClock.sleep(for: .seconds(0.1))
-            if let trimmedQuery {
-              let results = try await database.searchMemories(trimmedQuery)
-              await send(.updateSearchResults(results))
-//              let resultsCount = templates.count
-//              let announcement = resultsCount == 0 ? Localized.noSearchResults : Localized.searchResultsHeaderTitle.format(resultsCount)
-//              await UIAccessibility.post(notification: .announcement, argument: announcement)
-            } else {
-              await send(.updateSearchResults([]))
-            }
-            await send(.binding(.set(\.isLoading, false)))
+  
+  public var body: some ReducerOf<Self> {
+    BindingReducer()
+    Reduce { state, action in
+      switch action {
+      case .updateSearchResults(let results):
+        state.resultsList = results
+          .nonEmpty
+          .map({ MemoryList.State(memories: $0, isDataLoaded: true, allowsDelete: false, displayPrivateItemName: true) })
+        return .none
+      case .binding(\.query):
+        state.isLoading = true
+        let trimmedQuery = state.query.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        return .run { [continuousClock, database] send in
+          try await continuousClock.sleep(for: .seconds(0.1))
+          if let trimmedQuery {
+            let results = try await database.searchMemories(trimmedQuery)
+            await send(.updateSearchResults(results))
+            //              let resultsCount = templates.count
+            //              let announcement = resultsCount == 0 ? Localized.noSearchResults : Localized.searchResultsHeaderTitle.format(resultsCount)
+            //              await UIAccessibility.post(notification: .announcement, argument: announcement)
+          } else {
+            await send(.updateSearchResults([]))
           }
-          .cancellable(id: SearchRequestID.id, cancelInFlight: true)
-        case .resultsList(let action):
-          return resultsListAction(action, state: &state)
-        case .binding:
-          return .none
-        case .resultMemoryTapped(_):
-          return.none
+          await send(.binding(.set(\.isLoading, false)))
         }
-      }
-      .ifLet(\.resultsList, action: \.resultsList) {
-        MemoryList()
+        .cancellable(id: SearchRequestID.id, cancelInFlight: true)
+      case .resultsList(let action):
+        return resultsListAction(action, state: &state)
+      case .binding:
+        return .none
+      case .resultMemoryTapped:
+        return.none
       }
     }
+    .ifLet(\.resultsList, action: \.resultsList) {
+      MemoryList()
+    }
+  }
   
   private func resultsListAction(_ action: MemoryList.Action, state: inout State) -> EffectOf<Self> {
     return .none
-//    switch action {
-//    case .memoryForm(_):
-//      <#code#>
-//    case .memoryTapped(_):
-//      <#code#>
-//    case .closeButtonTapped:
-//      <#code#>
-//    case .settingsButtonTapped:
-//      <#code#>
-//    case .deleteRows(_, _):
-//      <#code#>
-//    case .addMemory(_):
-//      <#code#>
-//    case .loadDataIfNeeded:
-//      <#code#>
-//    case .updateMemories(_):
-//      <#code#>
-//    }
+    //    switch action {
+    //    case .memoryForm(_):
+    //      <#code#>
+    //    case .memoryTapped(_):
+    //      <#code#>
+    //    case .closeButtonTapped:
+    //      <#code#>
+    //    case .settingsButtonTapped:
+    //      <#code#>
+    //    case .deleteRows(_, _):
+    //      <#code#>
+    //    case .addMemory(_):
+    //      <#code#>
+    //    case .loadDataIfNeeded:
+    //      <#code#>
+    //    case .updateMemories(_):
+    //      <#code#>
+    //    }
   }
 }
 
@@ -129,20 +130,28 @@ public struct SearchMemoryView<Content>: View where Content: View {
           ProgressView()
             .progressViewStyle(.circular)
         } else {
-          Text("No results for '\(store.query)'")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .padding(.vertical)
-            .accessibilityAddTraits(.isHeader)
+          ContentUnavailableView.search(text: store.query)
         }
+      } else {
+        content()
       }
-      content()
     }
-    .searchable(
-      text: $store.query,
-      isPresented: $store.isSearchPresented,
-      prompt: "Search items, tags or notes"
-    )
+    .when(true) {
+      if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+        $0.searchable(
+          text: $store.query,
+          isPresented: $store.isSearchPresented,
+          prompt: "Search items, tags or notes"
+        )
+      } else {
+        $0.searchable(
+          text: $store.query,
+          isPresented: $store.isSearchPresented,
+          placement: .navigationBarDrawer(displayMode: .always),
+          prompt: "Search items, tags or notes"
+        )
+      }
+    }
   }
 }
 
