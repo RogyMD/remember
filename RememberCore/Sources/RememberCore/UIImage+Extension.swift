@@ -67,10 +67,10 @@ extension UIImage {
     }
     let aspectWidth = targetImageSize.width / size.width
     let aspectHeight = targetImageSize.height / size.height
-    let aspectFillScale = max(aspectWidth, aspectHeight)
+    let aspectFitScale = min(aspectWidth, aspectHeight)
     let scaledSize = CGSize(
-      width: size.width * aspectFillScale,
-      height: size.height * aspectFillScale
+      width: size.width * aspectFitScale,
+      height: size.height * aspectFitScale
     )
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1

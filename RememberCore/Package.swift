@@ -38,7 +38,6 @@ let package = Package(
     dependencies: [
       .package(url: "https://github.com/pointfreeco/swift-composable-architecture", exact: "1.19.1"),
       .package(url: "https://github.com/RogyMD/ZoomableImage", exact: "1.0.1"),
-      .package(url: "https://github.com/pointfreeco/swift-navigation", exact: "2.4.2"),
 //      .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.5.2"),
 //      .package(url: "https://github.com/pointfreeco/swift-issue-reporting", from: "1.5.2"),
       //    .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", exact: "1.15.3"),
@@ -159,6 +158,8 @@ let package = Package(
             "RequestStoreReview",
             "SharingKeys",
             "SettingsFormFeature",
+            "CameraView",
+            "RememberCameraFeature",
           ]
         ),
         // MARK: Clients

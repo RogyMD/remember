@@ -82,13 +82,16 @@ public struct Home {
       case .memoryForm(.doneButtonTapped):
         let memory = state.memoryForm?.memory
         state.memoryForm = nil
+        let isMemoryListVisible = state.memoryList != nil
         return .run { [database] send in
           guard let memory else { return }
           if memory.items.count > 1, memory.tags.isEmpty == false || memory.location != nil || memory.notes.isEmpty == false || memory.recognizedText?.isEmpty == false {
             await send(.requestStoreReview)
           }
           try await database.updateMemory(memory)
-          await send(.memoryList(.updateMemory(memory)))
+          if isMemoryListVisible {
+            await send(.memoryList(.updateMemory(memory)))
+          }
         }
       case .memoryForm(.cancelButtonTapped):
         state.memoryForm = nil
@@ -192,7 +195,7 @@ public struct Home {
 extension CapturedImage {
   func previewImageAndPoint() async -> (UIImage, CGPoint) {
     let preview = await image.previewImage() ?? UIImage()
-    return (preview, point.convertPoint(from: image.size, to: .init(origin: .zero, size: preview.size)))
+    return (preview, point)
   }
 }
 

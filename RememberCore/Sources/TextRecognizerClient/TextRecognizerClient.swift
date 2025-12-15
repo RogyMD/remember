@@ -53,12 +53,7 @@ extension TextRecognizerClient: DependencyKey {
       return .init(text: "", textFrames: [])
     }
 
-    let screenScale = await MainActor.run {
-      UIScreen.main.scale
-    }
-
     var allText = ""
-    var recognizedNouns: Set<String> = []
     let frames: [RecognizedTextFrame] = observations.flatMap { observation -> [RecognizedTextFrame] in
       guard let topCandidate = observation.topCandidates(1).first else { return [] }
       let fullText = topCandidate.string
@@ -75,15 +70,12 @@ extension TextRecognizerClient: DependencyKey {
         let boundingBox = (try? topCandidate.boundingBox(for: tokenRange))?.boundingBox ?? observation.boundingBox
         let rect = VNImageRectForNormalizedRect(boundingBox, cgImage.width, cgImage.height)
         let convertedRect = CGRect(
-          x: rect.origin.x / screenScale,
-          y: (CGFloat(cgImage.height) - rect.origin.y - rect.height) / screenScale,
-          width: rect.width / screenScale,
-          height: rect.height / screenScale
+          x: rect.origin.x,
+          y: (CGFloat(cgImage.height) - rect.origin.y - rect.height),
+          width: rect.width,
+          height: rect.height
         )
-        let (inserted, _) = recognizedNouns.insert(word)
-        if inserted {
-          result.append(RecognizedTextFrame(text: word, frame: convertedRect))
-        }
+        result.append(RecognizedTextFrame(text: word, frame: convertedRect))
         return true
       }
 

@@ -76,7 +76,9 @@ public struct MemoryItemPicker {
   
   public var body: some ReducerOf<Self> {
     BindingReducer()
-    Reduce { state, action in
+    Reduce {
+      state,
+      action in
       switch action {
       case .recognizedTextTapped(let textFrame):
         let item = MemoryItem(id: uuid().uuidString, name: textFrame.text, center: textFrame.frame.center)
@@ -106,7 +108,12 @@ public struct MemoryItemPicker {
                 await send(.set(\.showsRecognizedText, false))
                 return
               }
-              let recognizedText = RecognizedText(uuid: { uuid().uuidString }, result: result)
+              let screenBounds = await MainActor.run { UIScreen.main.bounds }
+              let recognizedText = RecognizedText(
+                uuid: { uuid().uuidString },
+                result: result,
+                frameConvertor: { $0.convertFrame(from: image.size, to: screenBounds) }
+              )
               await send(.set(\.recognizedText, recognizedText))
               await send(.set(\.displayTextFrames, recognizedText.textFrames), animation: .bouncy)
               await feedbackGenerator.generate(.impact(.soft, 0.5)).run()
@@ -124,7 +131,8 @@ public struct MemoryItemPicker {
           state.shouldFocusItem = false
           return .run { [id = state.items.first?.id] send in
             await send(.recognizeTextButtonTapped)
-            if let id, shouldFocusItem {
+            if let id,
+               shouldFocusItem {
               try await Task.sleep(for: .milliseconds(300))
               await send(.binding(.set(\.focusedMemoryItem, id)))
             }
@@ -530,8 +538,21 @@ extension UIFont {
 }
 
 extension RecognizedText {
-  init(uuid: () -> String, result: TextRecognizerClient.Result) {
-    self.init(id: uuid(), text: result.text, textFrames: result.textFrames.map({ TextFrame(text: $0.text, frame: $0.frame) }))
+  init(
+    uuid: () -> String,
+    result: TextRecognizerClient.Result,
+    frameConvertor: (CGRect) -> CGRect
+  ) {
+    self.init(
+      id: uuid(),
+      text: result.text,
+      textFrames: result.textFrames.map { textFrame in
+        TextFrame(
+          text: textFrame.text,
+          frame: frameConvertor(textFrame.frame)
+        )
+      }
+    )
   }
 }
 

@@ -64,13 +64,16 @@ public struct RememberCamera {
       case .cameraCapturedImage(let image):
         return .run { send in
           guard let croppedImage = await image.image.croppedToScreen() else { return }
-          let point = image.point.convertPoint(from: image.image.size, to: .init(origin: .zero, size: croppedImage.size))
+          let screenBounds = await MainActor.run { UIScreen.main.bounds }
+          let point = image.point.convertPoint(from: image.image.size, to: screenBounds)
           await send(.capturedImage(.init(image: croppedImage, point: point)))
         }
       case .importImage(let data):
         return .run { [now] send in
           guard let uiImage = UIImage(data: data) else { return }
-          let point = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
+          let center = CGPoint(x: uiImage.size.width / 2, y: uiImage.size.height / 2)
+          let screenBounds = await MainActor.run { UIScreen.main.bounds }
+          let point = center.convertPoint(from: uiImage.size, to: screenBounds)
           let metadata = extractMetadata(from: data)
           await send(
             .capturedImage(
