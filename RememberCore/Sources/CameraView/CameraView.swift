@@ -27,6 +27,8 @@ extension DispatchQueue {
 }
 
 final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegate, UIGestureRecognizerDelegate {
+  /// Used to show the eye effect only once
+  private static var showedEyeEffect = false
   private let zoomLabelContainer: UIView = {
       let view = UIView()
       view.translatesAutoresizingMaskIntoConstraints = false
@@ -44,6 +46,11 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       label.font = UIFont.monospacedDigitSystemFont(ofSize: 16, weight: .medium)
       label.backgroundColor = .clear
       return label
+  }()
+  private let eyeOverlay: EyeOverlayView = {
+    let overlay = EyeOverlayView()
+    overlay.translatesAutoresizingMaskIntoConstraints = false
+    return overlay
   }()
   var session = AVCaptureSession()
   private var sessionDevice: AVCaptureDevice? {
@@ -149,7 +156,7 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
   
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    guard session.inputs.isEmpty == false else { return }
+    guard session.inputs.isEmpty == false, session.isRunning == false else { return }
     DispatchQueue.captureSession.async { [weak session] in
       session?.startRunning()
     }
@@ -175,8 +182,11 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       let input = try AVCaptureDeviceInput(device: device)
       if session.canAddInput(input) { session.addInput(input) }
       if session.canAddOutput(photoOutput) { session.addOutput(photoOutput) }
-      DispatchQueue.captureSession.async { [session] in
+      DispatchQueue.captureSession.async { [weak self, session] in
         session.startRunning()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+          self?.eyeOverlay.openAndDismiss()
+        }
       }
     } catch {
       //      reportIssue(error)
@@ -208,6 +218,10 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       if isNoCameraAccessHidden == false {
         setupNoCameraAccess()
       } else if status == .authorized {
+        if Self.showedEyeEffect == false {
+          Self.showedEyeEffect = true
+          setupEyeOverlay()
+        }
         setupCameraAsync()
       }
     }
@@ -224,6 +238,16 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
       activityIndicatorOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
       activityIndicatorOverlayView.topAnchor.constraint(equalTo: view.topAnchor),
       activityIndicatorOverlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+    ])
+  }
+  
+  private func setupEyeOverlay() {
+    view.addSubview(eyeOverlay)
+    NSLayoutConstraint.activate([
+      eyeOverlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      eyeOverlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      eyeOverlay.topAnchor.constraint(equalTo: view.topAnchor),
+      eyeOverlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
     ])
   }
   
@@ -356,7 +380,12 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
   }
   
   private func setupCameraControls() {
-    view.addSubview(captureButton)
+    if eyeOverlay.superview != nil {
+      view.insertSubview(captureButton, belowSubview: eyeOverlay)
+    } else {
+      view.addSubview(captureButton)
+    }
+    
     zoomLabelContainer.addSubview(zoomLabel)
     view.addSubview(zoomLabelContainer)
     
@@ -393,7 +422,11 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
     torchButton.addTarget(self, action: #selector(torchButtonTouchUp), for: .touchUpInside)
     torchButton.addTarget(self, action: #selector(torchButtonTouchUp), for: .touchCancel)
     torchButton.addTarget(self, action: #selector(torchButtonTouchUp), for: .touchUpOutside)
-    view.addSubview(torchButton)
+    if eyeOverlay.superview != nil {
+      view.insertSubview(torchButton, belowSubview: eyeOverlay)
+    } else {
+      view.addSubview(torchButton)
+    }
     NSLayoutConstraint.activate([
       torchButton.widthAnchor.constraint(equalToConstant: 60),
       torchButton.heightAnchor.constraint(equalToConstant: 60),
@@ -547,7 +580,11 @@ final class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegat
   private let focusTargetView: UIView = FocusTargetView(frame: CGRect(x: 0, y: 0, width: 45, height: 45))
   private func showTapFeedback(at point: CGPoint, hapticFeedback: Bool) {
     if focusTargetView.superview == nil {
-      view.addSubview(focusTargetView)
+      if eyeOverlay.superview != nil {
+        view.insertSubview(focusTargetView, belowSubview: eyeOverlay)
+      } else {
+        view.addSubview(focusTargetView)
+      }
       focusTargetView.isUserInteractionEnabled = false
       focusTargetView.backgroundColor = UIColor.clear
     }
