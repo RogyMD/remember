@@ -65,7 +65,7 @@ public struct MemoryList {
     case memoryTapped(Memory.ID)
     case closeButtonTapped
     case deleteRows(Date, IndexSet)
-    case deletedMemories([Memory.ID])
+    case deletedMemoryItems([MemoryItem.ID])
     case addMemory(Memory)
     case loadDataIfNeeded
     case memoriesLoaded([Memory])
@@ -112,8 +112,7 @@ public struct MemoryList {
           guard let index = indices.first,
                   let list = state.dataSource[date],
                   index < list.count else { return .none }
-          guard let id = state.dataSource[date]?.remove(at: index) else { return .none }
-          state.memories.remove(id: id)
+          guard let id = state.dataSource[date]?.remove(at: index), let memory = state.memories.remove(id: id) else { return .none }
           if state.dataSource[date]?.isEmpty == true {
             state.dataSource.removeValue(forKey: date)
             if let index = state.rememberedDays.firstIndex(of: date) {
@@ -123,7 +122,7 @@ public struct MemoryList {
           return .run { [database] send in
             do {
               try await database.deleteMemory(id)
-              await send(.deletedMemories([id]))
+              await send(.deletedMemoryItems(memory.items.map(\.id)))
             } catch {
               reportIssue(error)
             }
@@ -134,7 +133,7 @@ public struct MemoryList {
         case .memoryForm(.presented(let action)):
           return memoryFormAction(action, state: &state)
         case .memoryForm,
-            .deletedMemories,
+            .deletedMemoryItems,
             .closeButtonTapped:
           return .none
         }

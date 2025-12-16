@@ -16,7 +16,6 @@ public struct SpotlightClient: Sendable {
 }
 
 extension DependencyValues {
-  /// NOTE: Keeping the existing capitalized accessor to match your code style in this module.
   public var spotlightClient: SpotlightClient {
     get { self[SpotlightClient.self] }
     set { self[SpotlightClient.self] = newValue }

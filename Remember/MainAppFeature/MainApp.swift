@@ -103,14 +103,17 @@ public struct MainAppReducer {
         switch action {
         case .home(.memoryList(.addMemory(let memory))), .home(.memoryList(.updateMemory(let memory))):
           return .run { [spotlight, isSiriTipHidden = state.isSiriTipHidden, siriTipMemory = state.siriTipMemory] send in
-            guard let searchableItems = memory.searchableItems else { return }
+            guard let searchableItems = memory.searchableItems else {
+              try await spotlight.remove(memory.items.map(\.id))
+              return
+            }
             try await spotlight.upsert(searchableItems)
             
             guard isSiriTipHidden == false, memory.isPrivate == false, siriTipMemory == nil else { return }
             await send(.set(\.siriTipMemory, memory))
             await send(.set(\.isSiriTipVisible, true))
           }
-        case .home(.memoryList(.deletedMemories(let ids))):
+        case .home(.memoryList(.deletedMemoryItems(let ids))):
           return .run { [spotlight] _ in
             try await spotlight.remove(ids)
           }

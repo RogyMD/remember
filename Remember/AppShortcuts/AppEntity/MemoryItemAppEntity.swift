@@ -19,7 +19,8 @@ public struct MemoryItemAppEntity: IndexedEntity {
   public let thumbnailURL: URL
   public let previewImageURL: URL
   public let textContent: String?
-  public var hideInSpotlight: Bool = false // TODO: return if it's private
+  public let isPrivate: Bool
+  public var hideInSpotlight: Bool { isPrivate }
   
   public var attributeSet: CSSearchableItemAttributeSet {
     let set = CSSearchableItemAttributeSet(contentType: .image)
@@ -136,7 +137,8 @@ extension MemoryItemAppEntity {
       keywords: memory.tags.map(\.label),
       thumbnailURL: memory.thumbnailImageURL,
       previewImageURL: memory.previewImageURL,
-      textContent: memory.recognizedText?.text
+      textContent: memory.recognizedText?.text,
+      isPrivate: memory.isPrivate
     )
     self.title = item.name
     self.creationDate = memory.created
