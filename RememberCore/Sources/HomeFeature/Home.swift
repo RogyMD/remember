@@ -219,35 +219,33 @@ public struct HomeView: View {
     .onOpenURL { url in
       store.send(.onOpenURL(url))
     }
-    .when(store.memoryForm == nil, apply: {
-      $0.sheet(isPresented: .constant(true)) {
+    .sheet(isPresented: .constant(store.showsSearchBar)) {
+      NavigationStack {
+        if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
+          searchMemoryView
+        } else {
+          searchMemoryView
+            .presentationBackground(.thinMaterial)
+        }
+      }
+      .presentationDragIndicator(.visible)
+      .interactiveDismissDisabled(true)
+      .presentationBackgroundInteraction(.enabled)
+      .presentationDetents(
+        [.bottom, .large],
+        selection: $store.presentationDetent
+      )
+      .sheet(item: $store.scope(state: \.settingsForm, action: \.settingsForm)) { store in
         NavigationStack {
           if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
-            searchMemoryView
+            SettingsFormView(store: store)
           } else {
-            searchMemoryView
+            SettingsFormView(store: store)
               .presentationBackground(.thinMaterial)
           }
         }
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(true)
-        .presentationBackgroundInteraction(.enabled)
-        .presentationDetents(
-          [.bottom, .large],
-          selection: $store.presentationDetent
-        )
-        .sheet(item: $store.scope(state: \.settingsForm, action: \.settingsForm)) { store in
-          NavigationStack {
-            if #available(iOS 26.0, *), #available(watchOS 26.0, *) {
-              SettingsFormView(store: store)
-            } else {
-              SettingsFormView(store: store)
-                .presentationBackground(.thinMaterial)
-            }
-          }
-        }
       }
-    })
+    }
   }
   
   var searchMemoryView: some View {
@@ -275,6 +273,11 @@ public struct HomeView: View {
   }
 }
 
+extension Home.State {
+  var showsSearchBar: Bool {
+    memoryForm == nil && camera.isFilesPresented == false
+  }
+}
 
 extension PresentationDetent {
   static let bottom = PresentationDetent.height(78)

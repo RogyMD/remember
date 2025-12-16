@@ -26,6 +26,8 @@ public struct RememberCamera {
   @ObservableState
   public struct State: Equatable {
     var pickedItem: PhotosPickerItem? = nil
+    public var isFilesPresented: Bool = false
+    public var isPhotosPresented: Bool = false
     
     public init() {
     }
@@ -33,12 +35,13 @@ public struct RememberCamera {
   
   @CasePathable
   public enum Action: Equatable, BindableAction {
-    //  public enum Action: Equatable {
     case binding(BindingAction<State>)
     case capturedImage(CapturedImage)
     case cameraCapturedImage(CapturedImage)
     case importImage(Data)
     case pickedFile(URL)
+    case photosButtonTapped
+    case filesButtonTapped
     case settingsButtonTapped
     case clipboardButtonTapped
   }
@@ -54,6 +57,12 @@ public struct RememberCamera {
       state,
       action in
       switch action {
+      case .photosButtonTapped:
+        state.isPhotosPresented = true
+        return .none
+      case .filesButtonTapped:
+        state.isFilesPresented = true
+        return .none
       case .clipboardButtonTapped:
         return .run { send in
           guard let imageData = UIPasteboard.general.image?.pngData() else {
@@ -130,7 +139,7 @@ public struct RememberCameraView: View {
   }
   
   public var body: some View {
-    Group(content: {
+    Group {
 #if targetEnvironment(simulator)
       VStack {
         Spacer()
@@ -144,20 +153,20 @@ public struct RememberCameraView: View {
         store.send(.cameraCapturedImage(.init(image: image, point: point)))
       }
 #endif
-    })
+    }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .ignoresSafeArea()
     .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
     .toolbar {
-      ToolbarItem(placement: .topBarLeading) {
+      ToolbarItem(placement: .topBarTrailing) {
         Menu {
           Button {
-            isPhotosPresented = true
+            store.send(.photosButtonTapped)
           } label: {
             Label("Photos", systemImage: "photo.on.rectangle.angled")
           }
           Button {
-            isFilesPresented = true
+            store.send(.filesButtonTapped)
           } label: {
             Label("Files", systemImage: "folder")
           }
@@ -190,11 +199,11 @@ public struct RememberCameraView: View {
       }
     }
     .photosPicker(
-      isPresented: $isPhotosPresented,
+      isPresented: $store.isPhotosPresented,
       selection: $store.pickedItem,
       matching: .images
     )
-    .fileImporter(isPresented: $isFilesPresented, allowedContentTypes: [.image]) { result in
+    .fileImporter(isPresented: $store.isFilesPresented, allowedContentTypes: [.image]) { result in
       do {
         store.send(.pickedFile(try result.get()))
       } catch {
