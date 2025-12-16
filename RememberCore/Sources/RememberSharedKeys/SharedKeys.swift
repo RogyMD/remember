@@ -5,8 +5,8 @@ import IssueReporting
 private extension String {
   static let isAutoTextDetectionEnabled = "isAutoTextDetectionEnabled"
   static let isTeaPurchased = "isTeaPurchased"
-  static let isSpotlightIndexed = "isSpotlightIndexed"
   static let isSiriTipHidden = "isSiriTipHidden2"
+  static let hasMigratedMemories = "hasMigratedMemories"
 }
 
 extension UserDefaults {
@@ -31,10 +31,10 @@ public extension SharedKey where Self == AppStorageKey<Bool>.Default {
   static var isTeaPurchased: Self {
     Self[.appStorage(.isTeaPurchased, store: .live()), default: false]
   }
-  static var isSpotlightIndexed: Self {
-    Self[.appStorage(.isSpotlightIndexed, store: .live()), default: false]
-  }
   static var isSiriTipHidden: Self {
     Self[.appStorage(.isSiriTipHidden, store: .live()), default: false]
+  }
+  static var hasMigratedMemories: Self {
+    Self[.appStorage(.hasMigratedMemories, store: .live()), default: false]
   }
 }

@@ -16,17 +16,9 @@ extension Memory {
 }
 
 extension Memory {
-static let dateFormatter: DateFormatter = {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0) // fix probably (but also need to migrate old folders to new)
-    return dateFormatter
-  }()
-  
-  public var memoryDirectoryName: String {
+  public var directoryName: String {
     let maxItems = 3
-    let suffix = [String(id.prefix(3)), Self.dateFormatter.string(from: created)].joined(separator: "_")
+    let suffix = String(id.prefix(6))
     let extraItems = items.count - maxItems
     var itemsPrefix = items
       .sorted(by: { $0.name < $1.name })
@@ -38,20 +30,20 @@ static let dateFormatter: DateFormatter = {
     }
     return itemsPrefix.nonEmpty.map({ [$0, suffix].joined(separator: "_") }) ?? suffix
   }
-  public var memoryDirectoryURL: URL {
-    URL.memoryDirectory.appending(path: memoryDirectoryName, directoryHint: .isDirectory)
+  public var directoryURL: URL {
+    URL.memoryDirectory.appending(path: directoryName, directoryHint: .isDirectory)
   }
   public var originalImageURL: URL {
-    memoryDirectoryURL.appendingPathComponent("original").appendingPathExtension("png")
+    directoryURL.appendingPathComponent("original").appendingPathExtension("png")
   }
   public var previewImageURL: URL {
-    memoryDirectoryURL.appendingPathComponent("preview").appendingPathExtension("png")
+    directoryURL.appendingPathComponent("preview").appendingPathExtension("png")
   }
   public var thumbnailImageURL: URL {
-    memoryDirectoryURL.appendingPathComponent("thumbnail").appendingPathExtension("png")
+    directoryURL.appendingPathComponent("thumbnail").appendingPathExtension("png")
   }
   public var textFileURL: URL {
-    memoryDirectoryURL.appendingPathComponent("memory").appendingPathExtension("txt")
+    directoryURL.appendingPathComponent("memory").appendingPathExtension("txt")
   }
   public var previewImage: UIImage {
     UIImage(contentsOfFile: previewImageURL.path()) ?? UIImage(systemName: "exclamationmark.octagon.fill") ?? UIImage()
@@ -67,14 +59,30 @@ static let dateFormatter: DateFormatter = {
 
 // TODO: V2 - To be removed
 extension Memory {
-  public var deprecated_originalImageURL: URL {
-    URL.imagesDirectory.appendingPathComponent(id).appendingPathExtension("png")
+  static let dateFormatter: DateFormatter = {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    return dateFormatter
+  }()
+  @available(*, deprecated, message: "Use directoryName instead.")
+  public var memoryDirectoryName: String {
+    let maxItems = 3
+    let suffix = [String(id.prefix(3)), Self.dateFormatter.string(from: created)].joined(separator: "_")
+    let extraItems = items.count - maxItems
+    var itemsPrefix = items
+      .sorted(by: { $0.name < $1.name })
+      .prefix(maxItems)
+      .map(\.name.sanitizedForFolderName)
+      .joined(separator: "-")
+    if extraItems > .zero {
+      itemsPrefix += "+\(extraItems)"
+    }
+    return itemsPrefix.nonEmpty.map({ [$0, suffix].joined(separator: "_") }) ?? suffix
   }
-  public var deprecated_previewImageURL: URL {
-    URL.imagesDirectory.appendingPathComponent(id + .previewSuffix).appendingPathExtension("png")
-  }
-  public var deprecated_thumbnailImageURL: URL {
-    URL.imagesDirectory.appendingPathComponent(id + .thumbnailSuffix).appendingPathExtension("png")
+  @available(*, deprecated, message: "Use directoryURL instead.")
+  public var memoryDirectoryURL: URL {
+    URL.memoryDirectory.appending(path: memoryDirectoryName, directoryHint: .isDirectory)
   }
 }
 
@@ -84,7 +92,7 @@ extension URL {
 }
 
 extension String {
-  var sanitizedForFolderName: String {
+  public var sanitizedForFolderName: String {
     let sanitized = unicodeScalars.map { CharacterSet.folderNameAllowed.contains($0) ? Character($0) : "_" }
     return String(sanitized.prefix(15))
   }

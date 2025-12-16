@@ -16,7 +16,6 @@ public struct MainAppReducer {
   @ObservableState
   public struct State: Equatable {
     var home: Home.State = .init()
-    @Shared(.isSpotlightIndexed) var isSpotlightIndexed
     @Shared(.isSiriTipHidden) var isSiriTipHidden
     var isSiriTipVisible: Bool = false
     var siriTipMemory: Memory?
@@ -122,14 +121,13 @@ public struct MainAppReducer {
                 let itemID = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return .none }
           return .send(.openMemoryWithItem(itemID))
         case .startApp:
-          guard state.isSpotlightIndexed == false else { return .none }
-          return .run { [database, spotlight, isSpotlightIndexed = state.$isSpotlightIndexed] send in
-            isSpotlightIndexed.withLock({ $0 = true })
+          return .run { [database] send in
             HippoCamAppShorcutsProvider.updateAppShortcutParameters()
-            let searchableItems = try await database.fetchMemories()
-              .compactMap(\.searchableItems)
-              .flatMap({ $0 })
-            try await spotlight.upsert(searchableItems)
+            @Shared(.hasMigratedMemories) var hasMigratedMemories
+            if hasMigratedMemories == false {
+              try? await database.migrateMemoriesToNewFolders()
+              $hasMigratedMemories.withLock { $0 = true }
+            }
           }
         case .home, .openMemory, .openMemoryWithItem, .createMemory, .binding:
           return .none

@@ -52,30 +52,4 @@ extension FileClient {
       return false
     }
   }
-  
-  func migrateMemoriesToNewFileStructureIfNeeded(_ fetchMemories: @Sendable () async throws -> [Memory]) async {
-    let shouldMigrate = itemExists(URL.imagesDirectory)
-    guard shouldMigrate else { return }
-    do {
-      let memories = try await fetchMemories()
-      for memory in memories {
-        do {
-          try await migrateMemoryFilesToNewStructure(memory)
-        } catch {
-          reportIssue(error)
-        }
-      }
-      try removeItem(.imagesDirectory)
-    } catch {
-      reportIssue(error)
-    }
-  }
-  
-  func migrateMemoryFilesToNewStructure(_ memory: Memory) async throws {
-    try moveItem(memory.deprecated_originalImageURL, memory.originalImageURL)
-    try moveItem(memory.deprecated_previewImageURL, memory.previewImageURL)
-    try moveItem(memory.deprecated_thumbnailImageURL, memory.thumbnailImageURL)
-    let memoryFile = MemoryFile(memory: memory)
-    try createFile(MemoryFile.encoder.encode(memoryFile), memory.textFileURL, true)
-  }
 }

@@ -3,6 +3,7 @@ import DependenciesMacros
 import RememberCore
 import UIKit
 import FileClient
+import OSLog
 
 @DependencyClient
 public struct DatabaseClient: Sendable {
@@ -40,6 +41,8 @@ public struct DatabaseClient: Sendable {
   public var removeAllData: @Sendable () async throws -> Void
   @DependencyEndpoint
   public var syncWithFileSystem: @Sendable () async throws -> SyncResult
+  @DependencyEndpoint
+  public var migrateMemoriesToNewFolders: @Sendable () async throws -> Void
 }
 
 extension DatabaseClient {
@@ -72,10 +75,7 @@ extension DatabaseClient: DependencyKey {
     @Dependency(\.fileClient) var fileClient
     return DatabaseClient(
       configure: {
-        let service = database()
-        await fileClient.migrateMemoriesToNewFileStructureIfNeeded({
-          try await service.fetch(.memories, compactMap: Memory.init)
-        })
+        _ = database()
       },
       hasMemories: {
         try await database().hasMemories()
@@ -117,12 +117,11 @@ extension DatabaseClient: DependencyKey {
           let data = try MemoryFile.encoder.encode(memoryFile)
           fileClient.createFile(data, existingMemory.textFileURL, true)
         }
-        let newMemoryDirectory = memory.memoryDirectoryURL
-        let existingMemoryDirectory = existingMemory.memoryDirectoryURL
+        let newMemoryDirectory = memory.directoryURL
+        let existingMemoryDirectory = existingMemory.directoryURL
         if newMemoryDirectory != existingMemoryDirectory {
           try fileClient.moveItem(existingMemoryDirectory, newMemoryDirectory)
         }
-        
       },
       saveMemory: { memory, image, previewImage in
         try await database().updateOrInsertMemory(memory)
@@ -136,7 +135,7 @@ extension DatabaseClient: DependencyKey {
           return
         }
         try await database().deleteMemory(id: id)
-        try fileClient.removeItem(memory.memoryDirectoryURL)
+        try fileClient.removeItem(memory.directoryURL)
       },
       deleteItem: { id in
         try await database().deleteItem(id: id)
@@ -151,7 +150,7 @@ extension DatabaseClient: DependencyKey {
         var verifiedItems: Set<String> = []
         let memories = try await database().fetch(.memories, compactMap: Memory.init)
         for memory in memories {
-          let memoryDirectoryURL = memory.memoryDirectoryURL
+          let memoryDirectoryURL = memory.directoryURL
           let isValid = (
             fileClient.itemExists(memory.originalImageURL) &&
             fileClient.itemExists(memory.textFileURL)
@@ -182,6 +181,30 @@ extension DatabaseClient: DependencyKey {
           }
         }
         return syncResult
+      },
+      migrateMemoriesToNewFolders: {
+        let memories = try await database().fetch(.memories, compactMap: Memory.init)
+        guard memories.isEmpty == false else { return }
+        let contentsDirectory = try fileClient.contentsOfDirectory(.memoryDirectory)
+        for memory in memories {
+          let currentDirectory: String? = {
+            if contentsDirectory.contains(memory.memoryDirectoryName) {
+              return memory.memoryDirectoryName
+            } else {
+              let itemsPrefix = memory.items
+                .sorted(by: { $0.name < $1.name })
+                .prefix(3)
+                .map(\.name.sanitizedForFolderName)
+                .joined(separator: "-")
+              return contentsDirectory.first(where: { directory in
+                directory.localizedCaseInsensitiveContains(memory.id.prefix(3)) && directory.hasPrefix(itemsPrefix)
+              })
+            }
+          }()
+          guard let currentDirectory else { continue }
+          try? fileClient.moveItem(URL.memoryDirectory.appending(path: currentDirectory), URL.memoryDirectory.appending(path: memory.directoryName))
+        }
+        logger.info("\(memories.count) memories has been migrated to new folders.")
       }
     )
   }()
@@ -277,3 +300,8 @@ extension MemoryTag {
     self.init(label: model.label)
   }
 }
+
+let logger = Logger(
+  subsystem: "Remember.DatabaseClient",
+  category: "Live"
+)

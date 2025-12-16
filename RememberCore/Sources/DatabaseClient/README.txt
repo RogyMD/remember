@@ -18,8 +18,8 @@ Each folder inside "Memories" represents a saved memory.
 
 Folders are named like this:
 
-{labels}_{id}_{date}_{time}
-Ex. Label1-Label2_2025-05-31-19-00-00
+{labels}_{id}
+Ex. Label1-Label2_123456
 
 Inside each memory folder:
 - `original.png`: Full-resolution image
@@ -30,11 +30,12 @@ Inside each memory folder:
   - tags (if available)
   - notes (if available)
   - location (if available)
+  - detectedTextInPhoto (if available)
   - creation date
   - unique ID
 
-More info at: https://rogy.app/hippocam
+More info at: https://aigarden.uk/hippocam
 
 Thanks for using HippoCam!  
 With love,  
-Igor
+AI Garden
