@@ -55,13 +55,14 @@ final class EyeOverlayView: UIView {
   }
 
   /// Opens the eye, then fades out and removes itself.
-  func openAndDismiss(openDuration: CFTimeInterval = 0.7, fadeDelay: TimeInterval = 0.55, fadeDuration: TimeInterval = 0.25) {
+  func openAndDismiss(openDuration: CFTimeInterval = 0.6, fadeDelay: TimeInterval = 0.5, fadeDuration: TimeInterval = 0.4) {
     guard didOpen == false else { return }
     didOpen = true
 
     setOpenness(1, animated: true, duration: openDuration)
 
     UIView.animate(withDuration: fadeDuration, delay: fadeDelay, options: [.beginFromCurrentState, .curveEaseOut]) {
+      self.transform = .init(scaleX: 4, y: 4)
       self.alpha = 0
     } completion: { _ in
       self.removeFromSuperview()

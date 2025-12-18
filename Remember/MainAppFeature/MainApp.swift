@@ -164,6 +164,12 @@ public struct MainApp: App {
   
   public var body: some Scene {
     WindowGroup {
+      if let siriTipAppIntent = store.siriTipAppIntent {
+        SiriTipView(intent: siriTipAppIntent, isVisible: $store.isSiriTipVisible)
+          .siriTipViewStyle(.automatic)
+          .scenePadding()
+          .transition(.move(edge: .bottom).animation(.bouncy))
+      }
       HomeView(store: store.scope(state: \.home, action: \.home))
         .task {
           store.send(.startApp)
@@ -171,13 +177,6 @@ public struct MainApp: App {
         .onContinueUserActivity(CSSearchableItemActionType) { activity in
           store.send(.onContinueSearchableItemAction(activity))
         }
-      
-      if let siriTipAppIntent = store.siriTipAppIntent {
-        SiriTipView(intent: siriTipAppIntent, isVisible: $store.isSiriTipVisible)
-          .siriTipViewStyle(.automatic)
-          .scenePadding()
-          .transition(.move(edge: .bottom).animation(.bouncy))
-      }
     }
   }
 }
