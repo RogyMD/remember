@@ -117,7 +117,7 @@ public struct SettingsFormView: View {
         .disabled(store.isSyncing)
       }
       
-      Section("🫶 Thank You for Using HippoCam") {
+      Section {
         Link(destination: AppConfig.helpURL) {
           Label("Get Started", systemImage: "graduationcap.fill")
             .foregroundStyle(Color(uiColor: .systemGreen))
@@ -141,6 +141,12 @@ public struct SettingsFormView: View {
           Label("About", systemImage: "info.circle.fill")
             .foregroundStyle(Color(uiColor: .label))
         }
+      } header: {
+        Text("🫶 Thank You for Using HippoCam")
+      } footer: {
+#if BETA
+        Text("You're using HippoCam Beta")
+#endif
       }
       .listRowBackground(Color.clear.background(.thinMaterial))
       
