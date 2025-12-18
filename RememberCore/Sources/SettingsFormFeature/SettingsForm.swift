@@ -146,6 +146,8 @@ public struct SettingsFormView: View {
       } footer: {
 #if BETA
         Text("You're using HippoCam Beta")
+#else
+        EmptyView()
 #endif
       }
       .listRowBackground(Color.clear.background(.thinMaterial))
